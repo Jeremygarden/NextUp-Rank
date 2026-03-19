@@ -19,14 +19,19 @@ class BilliardGlicko:
         """
         Custom improvement over FargoRate: 
         Converts Rack-level score into a continuous probability win value [0, 1].
-        A 7:0 win is worth more than a 7:6 win.
+        Formula: S_adj = 0.5 + ((W - L) / (W + L)) * 0.5
         """
         total = racks_won + racks_lost
         if total == 0: return 0.5
-        # Scaling: 7:0 -> 1.0, 7:7 -> 0.5, 0:7 -> 0.0
-        # Formula: 0.5 + ((W-L)/(W+L)) * 0.5
         s_adj = 0.5 + ((racks_won - racks_lost) / total) * 0.5
         return s_adj
+
+    def calculate_memory_weight(self, match_index, total_matches=25, lam=0.1):
+        """
+        Real-time Display Weighting: omega_i = e^{-lambda * (total - i)}
+        Gives higher weight to recent matches.
+        """
+        return math.exp(-lam * (total_matches - match_index))
 
     def update_rating(self, rating, rd, vol, racks_won, racks_lost, opp_rating, opp_rd):
         # 1. Convert to Glicko-2 Scale

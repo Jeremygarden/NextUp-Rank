@@ -37,9 +37,10 @@ CREATE TABLE IF NOT EXISTS matches (
     racks_won INTEGER NOT NULL, -- A's score
     racks_lost INTEGER NOT NULL, -- B's score
     venue_id UUID REFERENCES venues(id),
-    status TEXT DEFAULT 'completed', -- 'pending', 'completed', 'disputed'
+    status TEXT DEFAULT 'pending', -- 'pending', 'locked', 'completed', 'disputed'
     is_lbs_verified BOOLEAN DEFAULT FALSE,
-    match_metadata JSONB, -- { "handshake_time": "...", "distance": 15.2 }
+    distance_meters FLOAT, -- Real-time LBS check distance
+    match_metadata JSONB, -- { "handshake_time": "...", "distance": 15.2, "is_locked": true }
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
