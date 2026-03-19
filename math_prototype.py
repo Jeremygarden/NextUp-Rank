@@ -15,6 +15,47 @@ class BilliardGlicko:
     def _E(self, mu, mu_j, phi_j):
         return 1.0 / (1.0 + math.exp(-self._g(phi_j) * (mu - mu_j)))
 
+    def _f(self, x, delta, phi, v, a, tau):
+        """
+        Glicko-2 Volatility iteration function f(x)
+        """
+        ex = math.exp(x)
+        num = ex * (delta**2 - phi**2 - v - ex)
+        den = 2 * (phi**2 + v + ex)**2
+        return num / den - (x - a) / (tau**2)
+
+    def calculate_new_vol(self, delta, phi, v, vol, tau):
+        """
+        Illinois algorithm (Numerical iteration) for Glicko-2 Volatility sigma'
+        This is the standard iterative solver for volatility.
+        """
+        a = math.log(vol**2)
+        A = a
+        if delta**2 > phi**2 + v:
+            B = math.log(delta**2 - phi**2 - v)
+        else:
+            k = 1
+            while self._f(a - k * tau, delta, phi, v, a, tau) < 0:
+                k += 1
+            B = a - k * tau
+
+        fA = self._f(A, delta, phi, v, a, tau)
+        fB = self._f(B, delta, phi, v, a, tau)
+
+        epsilon = 0.000001
+        while abs(B - A) > epsilon:
+            C = A + (A - B) * fA / (fB - fA)
+            fC = self._f(C, delta, phi, v, a, tau)
+            if fC * fB < 0:
+                A = B
+                fA = fB
+            else:
+                fA = fA / 2
+            B = C
+            fB = fC
+
+        return math.exp(A / 2)
+
     def apply_rd_decay(self, rd, vol, days_since_last_match):
         """
         Glicko-2 RD Decay: 
@@ -60,11 +101,8 @@ class BilliardGlicko:
         v = 1.0 / (g_phi_j**2 * e_val * (1.0 - e_val))
         delta = v * (g_phi_j * (s_adj - e_val))
         
-        # 4. Volatility update (simplified iteration)
-        a = math.log(vol**2)
-        # Numerical iteration for new volatility sigma' (simplified here for prototype)
-        # Real Glicko-2 uses Illinois algorithm; here we assume minor step for demo
-        new_vol = vol * math.exp(self.tau * delta / (2 * v)) 
+        # 4. Volatility update (Standard Glicko-2 Illinois Algorithm)
+        new_vol = self.calculate_new_vol(delta, phi, v, vol, self.tau)
         
         # 5. Rating and RD update
         phi_star = math.sqrt(phi**2 + new_vol**2)
