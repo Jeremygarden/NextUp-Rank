@@ -1,0 +1,5 @@
+introduction.md
+improvement.md
+*.log
+__pycache__/
+.env
