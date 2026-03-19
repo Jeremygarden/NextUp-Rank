@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- Performance Cache (JSONB for "Recent 25" display)
     recent_25_snapshots JSONB DEFAULT '[]',
     last_location GEOGRAPHY(POINT),
+    last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- RD decay baseline
     karma_score INTEGER DEFAULT 100, -- Trust level for dispute resolution
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
