@@ -15,6 +15,16 @@ class BilliardGlicko:
     def _E(self, mu, mu_j, phi_j):
         return 1.0 / (1.0 + math.exp(-self._g(phi_j) * (mu - mu_j)))
 
+    def apply_rd_decay(self, rd, vol, days_since_last_match):
+        """
+        Glicko-2 RD Decay: 
+        phi' = sqrt(phi^2 + vol^2 * t)
+        where t is the time elapsed since last match.
+        """
+        phi = rd / 173.7178
+        phi_star = math.sqrt(phi**2 + (vol**2) * days_since_last_match)
+        return min(350.0, phi_star * 173.7178)
+
     def calculate_s_adj(self, racks_won, racks_lost):
         """
         Custom improvement over FargoRate: 
