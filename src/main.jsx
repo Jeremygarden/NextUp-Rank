@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import PerformancePulseGraph from '../ui/PerformancePulseGraph'
+import PerformancePulseGraph from './ui/PerformancePulseGraph.jsx'
 import './index.css'
 
 const App = () => (
