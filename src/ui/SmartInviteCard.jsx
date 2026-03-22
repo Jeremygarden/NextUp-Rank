@@ -9,6 +9,7 @@ const SmartInviteCard = ({
   startTime = "Tonight 20:00",
   entryFee = "Free",
   status = "Pending", // Pending, Joined, Expired
+  role = "Player", // Player, Admin, Spectator
 }) => {
   // 根据对局类型返回不同的视觉样式
   const getGameStyles = (type) => {
@@ -59,6 +60,20 @@ const SmartInviteCard = ({
     }
   };
 
+  const getRoleBadge = (role) => {
+    const roles = {
+      Admin: { text: "Admin", bg: "bg-red-500/10", border: "border-red-500/30", color: "text-red-400" },
+      Player: { text: "Player", bg: "bg-blue-500/10", border: "border-blue-500/30", color: "text-blue-400" },
+      Spectator: { text: "Spectator", bg: "bg-purple-500/10", border: "border-purple-500/30", color: "text-purple-400" },
+    };
+    const r = roles[role] || roles.Player;
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${r.bg} ${r.border} ${r.color}`}>
+        {r.text}
+      </span>
+    );
+  };
+
   const style = getGameStyles(gameType);
 
   return (
@@ -91,9 +106,12 @@ const SmartInviteCard = ({
             {inviter[0]}
           </div>
           <div>
-            <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
-              {status === "Joined" ? "Match Confirmed With" : "Match Request From"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
+                {status === "Joined" ? "Match Confirmed With" : "Match Request From"}
+              </p>
+              {getRoleBadge(role)}
+            </div>
             <h3 className="text-xl text-white font-bold">{inviter}</h3>
           </div>
         </div>
