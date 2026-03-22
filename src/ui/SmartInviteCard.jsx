@@ -11,8 +11,16 @@ const SmartInviteCard = ({
   status = "Pending", // Pending, Joined, Expired
   role = "Player", // Player, Admin, Spectator
   inviteUrl = "https://nextup.rank/match/123",
+  expiresInSeconds = 3600,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(expiresInSeconds);
+
+  React.useEffect(() => {
+    if (status !== "Pending" || timeLeft <= 0) return;
+    const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [status, timeLeft]);
 
   const handleCopy = async () => {
     try {
@@ -72,6 +80,12 @@ const SmartInviteCard = ({
     }
   };
 
+  const getTimerStyles = (seconds) => {
+    if (seconds > 600) return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    if (seconds > 300) return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+    return "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse";
+  };
+
   const getRoleBadge = (role) => {
     const roles = {
       Admin: { text: "Admin", bg: "bg-red-500/10", border: "border-red-500/30", color: "text-red-400" },
@@ -103,9 +117,17 @@ const SmartInviteCard = ({
           <span
             className={`font-bold tracking-wider uppercase text-sm ${style.text}`}
           >
-            {status === "Expired" ? "Expired" : style.label}
+            {status === "Expired" || timeLeft <= 0 ? "Expired" : style.label}
           </span>
         </div>
+        
+        {status === "Pending" && timeLeft > 0 && (
+          <div className={`px-2 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 border ${getTimerStyles(timeLeft)} transition-colors duration-500`}>
+            <Clock className="w-3 h-3" />
+            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+          </div>
+        )}
+
         <div className="bg-white/10 px-2 py-1 rounded text-[10px] text-white/60 font-mono">
           #INV-2024
         </div>
