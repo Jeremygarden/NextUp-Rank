@@ -1,6 +1,6 @@
-import React from "react";
-import { Target, Clock, Trophy, Users, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { Target, Clock, Trophy, Users, ChevronRight, Copy, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SmartInviteCard = ({
   inviter = "Alex",
@@ -10,7 +10,19 @@ const SmartInviteCard = ({
   entryFee = "Free",
   status = "Pending", // Pending, Joined, Expired
   role = "Player", // Player, Admin, Spectator
+  inviteUrl = "https://nextup.rank/match/123",
 }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy!", err);
+    }
+  };
   // 根据对局类型返回不同的视觉样式
   const getGameStyles = (type) => {
     if (status === "Expired") {
@@ -139,8 +151,23 @@ const SmartInviteCard = ({
               <button className="flex-[2] bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
                 Accept <ChevronRight className="w-4 h-4" />
               </button>
-              <button className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all">
-                Decline
+              <button className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group" onClick={handleCopy}>
+                <div className="flex items-center justify-center gap-2">
+                  <Copy className="w-4 h-4" /> Copy
+                </div>
+                
+                <AnimatePresence>
+                  {copied && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: -45 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute left-1/2 -translate-x-1/2 bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-xl flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3 text-emerald-500" /> Copied
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </button>
             </>
           ) : status === "Joined" ? (
