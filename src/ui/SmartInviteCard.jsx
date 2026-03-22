@@ -8,9 +8,18 @@ const SmartInviteCard = ({
   location = "Golden Break Club",
   startTime = "Tonight 20:00",
   entryFee = "Free",
+  status = "Pending", // Pending, Joined, Expired
 }) => {
   // 根据对局类型返回不同的视觉样式
   const getGameStyles = (type) => {
+    if (status === "Expired") {
+      return {
+        label: "Link Expired",
+        color: "bg-slate-950/80",
+        text: "text-slate-500",
+        border: "border-slate-800",
+      };
+    }
     switch (type) {
       case "8ball":
         return {
@@ -56,7 +65,7 @@ const SmartInviteCard = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-sm"
+      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-sm ${status === "Expired" ? "grayscale contrast-75" : ""}`}
     >
       {/* 顶部：玩法标识 */}
       <div
@@ -67,7 +76,7 @@ const SmartInviteCard = ({
           <span
             className={`font-bold tracking-wider uppercase text-sm ${style.text}`}
           >
-            {style.label}
+            {status === "Expired" ? "Expired" : style.label}
           </span>
         </div>
         <div className="bg-white/10 px-2 py-1 rounded text-[10px] text-white/60 font-mono">
@@ -78,12 +87,12 @@ const SmartInviteCard = ({
       <div className="p-6">
         {/* 邀请人 */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl shadow-lg">
+          <div className={`w-12 h-12 rounded-2xl ${status === "Expired" ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg`}>
             {inviter[0]}
           </div>
           <div>
             <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
-              Match Request From
+              {status === "Joined" ? "Match Confirmed With" : "Match Request From"}
             </p>
             <h3 className="text-xl text-white font-bold">{inviter}</h3>
           </div>
@@ -107,12 +116,24 @@ const SmartInviteCard = ({
 
         {/* 操作区 */}
         <div className="flex gap-3">
-          <button className="flex-[2] bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
-            Accept <ChevronRight className="w-4 h-4" />
-          </button>
-          <button className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all">
-            Decline
-          </button>
+          {status === "Pending" ? (
+            <>
+              <button className="flex-[2] bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
+                Accept <ChevronRight className="w-4 h-4" />
+              </button>
+              <button className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all">
+                Decline
+              </button>
+            </>
+          ) : status === "Joined" ? (
+            <div className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-4 rounded-2xl font-bold text-center">
+              Matched Successfully
+            </div>
+          ) : (
+            <div className="w-full bg-slate-800/50 text-slate-500 border border-slate-700/50 py-4 rounded-2xl font-bold text-center italic">
+              Invitation Expired
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
