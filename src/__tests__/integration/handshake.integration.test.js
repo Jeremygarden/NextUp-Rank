@@ -1,34 +1,35 @@
-import { vi } from 'vitest';
+import { vi, beforeEach, describe, expect, it } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
 
-const eventHandlers = {};
+const supabaseMock = vi.hoisted(() => {
+  const eventHandlers = {};
 
-const channel = {
-  on: (_type, filter, handler) => {
-    eventHandlers[filter.event] = handler;
-    return channel;
-  },
-  subscribe: (cb) => {
-    if (cb) cb('SUBSCRIBED');
-    return channel;
-  },
-};
+  const channel = {
+    on: (_type, filter, handler) => {
+      eventHandlers[filter.event] = handler;
+      return channel;
+    },
+    subscribe: (cb) => {
+      if (cb) cb('SUBSCRIBED');
+      return channel;
+    },
+  };
 
-const supabaseMock = {
-  channel: vi.fn(() => channel),
-  removeChannel: vi.fn(),
-  __getHandlers: () => eventHandlers,
-  __resetHandlers: () => {
-    Object.keys(eventHandlers).forEach((key) => delete eventHandlers[key]);
-  },
-};
+  return {
+    channel: vi.fn(() => channel),
+    removeChannel: vi.fn(),
+    __getHandlers: () => eventHandlers,
+    __resetHandlers: () => {
+      Object.keys(eventHandlers).forEach((key) => delete eventHandlers[key]);
+    },
+  };
+});
 
 vi.mock('../../lib/supabaseClient', () => ({
   __esModule: true,
   default: supabaseMock,
 }));
 
-import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
 import usePlazaEvents from '../../hooks/usePlazaEvents';
 import supabase from '../../lib/supabaseClient';
 
@@ -40,8 +41,8 @@ describe('usePlazaEvents handshake integration', () => {
   });
 
   it('goes from pending to locked when a handshake success arrives', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => usePlazaEvents());
-    await waitForNextUpdate();
+    const { result } = renderHook(() => usePlazaEvents());
+    
 
     const handlers = supabase.__getHandlers();
 
@@ -70,8 +71,8 @@ describe('usePlazaEvents handshake integration', () => {
   });
 
   it('flags is_lbs_verified when the LBS distance check passes', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => usePlazaEvents());
-    await waitForNextUpdate();
+    const { result } = renderHook(() => usePlazaEvents());
+    
 
     const handlers = supabase.__getHandlers();
 

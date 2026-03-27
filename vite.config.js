@@ -7,5 +7,10 @@ export default defineConfig({
     port: 3000,
     host: true,
     allowedHosts: ['3gvphs-3000.csb.app', '.csb.app']
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test-setup.js',
   }
 })

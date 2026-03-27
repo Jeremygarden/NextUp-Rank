@@ -63,6 +63,7 @@ describe('usePlazaEvents', () => {
 
     expect(result.current.matches[0]).toEqual({
       match_id: 'match-1',
+      id: 'match-1',
       player_name: 'Alex',
       rating: 1600,
       venue_name: 'Corner Club',
