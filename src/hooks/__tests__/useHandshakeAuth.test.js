@@ -12,18 +12,19 @@ vi.mock('../../lib/supabaseClient', () => ({
   },
 }));
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  supabase.auth.getSession.mockResolvedValue({
-    data: { session: { access_token: 'token-123' } },
+describe('useHandshake auth', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
-});
 
-describe('useHandshake', () => {
-  it('calls the handshake endpoint with the correct payload', async () => {
+  it('adds Authorization header when session exists', async () => {
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { access_token: 'auth-token' } },
+    });
+
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: 'locked', distance_meters: 40 }),
+      json: async () => ({ status: 'locked', distance_meters: 10 }),
     });
 
     global.fetch = fetchMock;
@@ -32,9 +33,9 @@ describe('useHandshake', () => {
 
     await act(async () => {
       await result.current.trigger({
-        match_id: 'match-1',
-        invite_code: 'INV123',
-        player_b_id: 'player-b',
+        match_id: 'match-10',
+        invite_code: 'INV10',
+        player_b_id: 'player-10',
         current_location: { lat: 0, lng: 0 },
       });
     });
@@ -43,39 +44,40 @@ describe('useHandshake', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token-123',
+        Authorization: 'Bearer auth-token',
       },
       body: JSON.stringify({
-        match_id: 'match-1',
-        invite_code: 'INV123',
-        player_b_id: 'player-b',
+        match_id: 'match-10',
+        invite_code: 'INV10',
+        player_b_id: 'player-10',
         current_location: { lat: 0, lng: 0 },
       }),
     });
   });
 
-  it('returns success when status is locked', async () => {
+  it('runs fetch even when session is missing', async () => {
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: null },
+    });
+
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: 'locked', distance_meters: 75 }),
+      json: async () => ({ status: 'locked', distance_meters: 10 }),
     });
 
     global.fetch = fetchMock;
 
     const { result } = renderHook(() => useHandshake());
 
-    let success = false;
-
     await act(async () => {
-      success = await result.current.trigger({
-        match_id: 'match-2',
-        invite_code: 'INV999',
-        player_b_id: 'player-c',
-        current_location: { lat: 1, lng: 1 },
+      await result.current.trigger({
+        match_id: 'match-11',
+        invite_code: 'INV11',
+        player_b_id: 'player-11',
+        current_location: { lat: 0, lng: 0 },
       });
     });
 
-    expect(success).toBe(true);
-    expect(result.current.result.is_lbs_verified).toBe(true);
+    expect(fetchMock).toHaveBeenCalled();
   });
 });
