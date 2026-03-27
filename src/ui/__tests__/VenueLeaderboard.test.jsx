@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import React from "react";
 import VenueLeaderboard from "../VenueLeaderboard";
 
 // Mock recharts
-jest.mock("recharts", () => ({
+vi.mock("recharts", () => ({
   LineChart: ({ children }) => <svg data-testid="sparkline">{children}</svg>,
   Line: () => null,
   ResponsiveContainer: ({ children }) => <div>{children}</div>,

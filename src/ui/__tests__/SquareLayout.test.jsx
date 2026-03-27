@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import React from "react";
 import SquareLayout from "../SquareLayout";
 
 // Mock framer-motion
-jest.mock("framer-motion", () => ({
+vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, className }) => <div className={className}>{children}</div>,
   },
@@ -12,7 +13,7 @@ jest.mock("framer-motion", () => ({
 }));
 
 // Mock lucide-react
-jest.mock("lucide-react", () => ({
+vi.mock("lucide-react", () => ({
   Loader2: () => <div data-testid="spinner" />,
   Target: () => <div />,
   Clock: () => <div />,
@@ -23,17 +24,17 @@ jest.mock("lucide-react", () => ({
 }));
 
 // Mock SmartInviteCard to keep tests focused on layout
-jest.mock("../SmartInviteCard", () => ({ inviter, location }) => (
+vi.mock("../SmartInviteCard", () => ({ default: ({ inviter, location }) => (
   <div data-testid="smart-invite-card">{inviter} @ {location}</div>
-));
+)}));
 
 // Mock VenueLeaderboard
-jest.mock("../VenueLeaderboard", () => ({ venueName }) => (
+vi.mock("../VenueLeaderboard", () => ({ default: ({ venueName }) => (
   <div data-testid="venue-leaderboard">{venueName}</div>
-));
+)}));
 
 // Mock recharts (used inside VenueLeaderboard which is mocked anyway)
-jest.mock("recharts", () => ({
+vi.mock("recharts", () => ({
   LineChart: ({ children }) => <svg>{children}</svg>,
   Line: () => null,
   ResponsiveContainer: ({ children }) => <div>{children}</div>,

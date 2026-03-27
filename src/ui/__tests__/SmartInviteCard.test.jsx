@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import SmartInviteCard from "../SmartInviteCard";
 import React from "react";
 
 // Mock Lucide icons and Framer Motion to simplify tests
-jest.mock("lucide-react", () => ({
+vi.mock("lucide-react", () => ({
   Target: () => <div data-testid="icon-target" />,
   Clock: () => <div data-testid="icon-clock" />,
   Trophy: () => <div data-testid="icon-trophy" />,
@@ -13,7 +14,7 @@ jest.mock("lucide-react", () => ({
   Check: () => <div data-testid="icon-check" />,
 }));
 
-jest.mock("framer-motion", () => ({
+vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, className }) => <div className={className}>{children}</div>,
   },
@@ -55,22 +56,22 @@ describe("SmartInviteCard", () => {
   });
 
   test("countdown auto-expires when reaching zero", () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<SmartInviteCard {...defaultProps} expiresInSeconds={1} />);
     
     expect(screen.getByText("0:01")).toBeInTheDocument();
 
     act(() => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByText("Invitation Expired")).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test("copy button interaction", async () => {
     const mockClipboard = {
-      writeText: jest.fn().mockResolvedValue(),
+      writeText: vi.fn().mockResolvedValue(),
     };
     Object.assign(navigator, { clipboard: mockClipboard });
 
