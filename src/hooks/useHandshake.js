@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import supabase from '../lib/supabaseClient';
+
 const getDistanceMeters = (payload) => {
   if (!payload || typeof payload !== 'object') {
     return null;
@@ -63,10 +65,15 @@ const useHandshake = () => {
     setError(null);
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch('/api/match/handshake', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
           match_id,
