@@ -6,6 +6,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const MATH_SERVICE_URL = Deno.env.get('MATH_SERVICE_URL')
 const MATH_SERVICE_KEY = Deno.env.get('MATH_SERVICE_KEY')
+const MATH_USE_MOCK = Deno.env.get('MATH_USE_MOCK') // 'true' | 'false' | undefined
+
+// Feature switch guard: if explicitly disabled mock but URL not configured, fail fast
+if (MATH_USE_MOCK === 'false' && !MATH_SERVICE_URL) {
+  throw new Error('MATH_USE_MOCK=false but MATH_SERVICE_URL is not configured')
+}
 
 // ─── BG-1 Mock (used when MATH_SERVICE_URL is not configured) ───────────────
 // Implements simplified Glicko-2 with rack-level S_adj factor.
@@ -62,7 +68,9 @@ serve(async (req) => {
     let new_rating: number, new_rd: number, new_vol: number
 
     // 2. Call Math Service or fall back to mock
-    if (MATH_SERVICE_URL) {
+    // useMock: true when MATH_USE_MOCK=true, or URL not set and not explicitly disabled
+    const useMock = MATH_USE_MOCK === 'true' || (!MATH_SERVICE_URL && MATH_USE_MOCK !== 'false')
+    if (!useMock) {
       const response = await fetch(`${MATH_SERVICE_URL}/calculate-rating`, {
         method: 'POST',
         headers: {
@@ -74,8 +82,9 @@ serve(async (req) => {
       if (!response.ok) throw new Error(`Math calculation failed: ${response.statusText}`)
       ;({ new_rating, new_rd, new_vol } = await response.json())
     } else {
-      // [MOCK] MATH_SERVICE_URL not configured — using built-in BG-1 approximation
-      console.warn('[process-match] MATH_SERVICE_URL not set, using mock calculator')
+      // [MOCK] Using built-in BG-1 approximation
+      // Triggered by: MATH_USE_MOCK=true, or MATH_SERVICE_URL not set
+      console.warn('[process-match] Using mock calculator (MATH_USE_MOCK or no URL)')
       ;({ new_rating, new_rd, new_vol } = mockCalculateRating(params))
     }
 
@@ -94,7 +103,7 @@ serve(async (req) => {
       status: 'success',
       new_rating,
       new_rd,
-      mock: !MATH_SERVICE_URL  // flag so caller knows mock was used
+      mock: !MATH_SERVICE_URL || MATH_USE_MOCK === 'true'
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
