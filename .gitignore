@@ -7,3 +7,10 @@ __pycache__/
 
 # Agent memory files (private)
 memory/
+node_modules/
+dist/
+.env.production
+.env.local
+.env.*.local
+pnpm-lock.yaml
+*.pyc
