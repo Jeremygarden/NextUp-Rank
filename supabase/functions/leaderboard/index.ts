@@ -14,7 +14,7 @@ serve(async (req) => {
     let query = supabase
       .from("rating_snapshots")
       .select(
-        "user_id, rating_before, rating_after, rd_after, created_at, users(nickname)" +
+        "user_id, rating_before, rating_after, rd_after, created_at, users!rating_snapshots_user_id_fkey(nickname)" +
           (venueId ? ", matches!inner(venue_id)" : ""),
       )
       .order("created_at", { ascending: false })

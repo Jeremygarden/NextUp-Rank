@@ -22,8 +22,9 @@ const generateMockData = () => {
   });
 };
 
-const PerformancePulseGraph = () => {
-  const data = useMemo(() => generateMockData(), []);
+const PerformancePulseGraph = ({ data: propData }) => {
+  const mockData = useMemo(() => generateMockData(), []);
+  const data = propData || mockData;
 
   // 自定义点渲染：根据权重调整发光强度和大小
   const RenderCustomizedDot = (props) => {
@@ -59,7 +60,7 @@ const PerformancePulseGraph = () => {
         </div>
         <div className="text-right">
           <span className="text-amber-400 font-mono text-2xl font-black">
-            {data[24].rating}
+            {data[data.length - 1]?.rating ?? '--'}
           </span>
           <p className="text-slate-500 text-[10px] uppercase tracking-widest">Current Rating</p>
         </div>

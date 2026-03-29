@@ -3,3 +3,17 @@ improvement.md
 *.log
 __pycache__/
 .env
+<<<<<<< HEAD
+=======
+.vercel
+
+# Agent memory files (private)
+memory/
+node_modules/
+dist/
+.env.production
+.env.local
+.env.*.local
+pnpm-lock.yaml
+*.pyc
+>>>>>>> origin/draft/condescending-lumiere
