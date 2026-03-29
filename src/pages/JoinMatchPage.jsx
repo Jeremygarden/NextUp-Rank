@@ -12,7 +12,7 @@ export default function JoinMatchPage() {
   const [success, setSuccess] = useState(null)
 
   async function handleJoin() {
-    if (code.length !== 4) return
+    if (code.length !== 6) return
     setLoading(true)
     setError(null)
     try {
@@ -25,13 +25,13 @@ export default function JoinMatchPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invite_code: code, player_b_id: userId }),
+        body: JSON.stringify({ invite_code: code.toUpperCase(), player_b_id: userId }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || '加入失败')
       setSuccess(json)
       setTimeout(() => {
-        navigate(`/submit/${json.match_id || json.id}`, { state: { matchId: json.match_id || json.id } })
+        navigate(`/submit/${json.match_id}`, { state: { matchId: json.match_id } })
       }, 1500)
     } catch (e) {
       setError(e.message)
@@ -45,7 +45,7 @@ export default function JoinMatchPage() {
   function handleDigit(d) {
     if (d === '⌫') {
       setCode(c => c.slice(0, -1))
-    } else if (d && code.length < 4) {
+    } else if (d && code.length < 6) {
       setCode(c => c + d)
     }
   }
@@ -70,17 +70,29 @@ export default function JoinMatchPage() {
           <>
             <div className="mb-8 text-center">
               <h2 className="text-xl font-semibold mb-2">输入邀请码</h2>
-              <p className="text-slate-400 text-sm">请输入对手分享的 4 位邀请码</p>
+              <p className="text-slate-400 text-sm">请输入对手分享的 6 位邀请码</p>
             </div>
 
-            <div className="flex gap-3 mb-8">
-              {[0,1,2,3].map(i => (
-                <div key={i} className={`w-16 h-20 flex items-center justify-center text-4xl font-mono font-black rounded-2xl border-2 transition-colors
+            <div className="flex gap-2 mb-8">
+              {[0,1,2,3,4,5].map(i => (
+                <div key={i} className={`w-12 h-16 flex items-center justify-center text-2xl font-mono font-black rounded-xl border-2 transition-colors
                   ${code[i] ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-slate-700 bg-slate-900 text-slate-600'}`}>
                   {code[i] || '·'}
                 </div>
               ))}
             </div>
+
+            {/* Text input for alphanumeric invite code */}
+            <input
+              type="text"
+              value={code}
+              onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+              placeholder="输入邀请码"
+              className="w-full max-w-xs text-center text-2xl font-mono font-bold tracking-widest bg-slate-800 border-2 border-slate-600 focus:border-indigo-500 rounded-2xl py-4 px-6 mb-6 outline-none text-slate-100 placeholder-slate-600 uppercase"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+            />
 
             {error && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6 text-red-400 text-sm bg-red-400/10 p-3 rounded-xl w-full max-w-xs text-center">
@@ -88,22 +100,9 @@ export default function JoinMatchPage() {
               </motion.div>
             )}
 
-            <div className="grid grid-cols-3 gap-3 w-full max-w-xs mb-6">
-              {digits.map((d, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleDigit(d)}
-                  className={`h-16 rounded-2xl font-bold text-xl transition-colors
-                    ${d === '' ? 'pointer-events-none' : d === '⌫' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 text-slate-100'}`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-
             <button
               onClick={handleJoin}
-              disabled={code.length !== 4 || loading}
+              disabled={code.length !== 6 || loading}
               className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-lg"
             >
               {loading ? <><Loader2 className="animate-spin" size={20} />加入中...</> : '加入对局'}

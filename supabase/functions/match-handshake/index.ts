@@ -1,20 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const fetchNickname = async (supabase, userId: string) => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("nickname")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error || !data) {
-    throw new Error("User not found");
-  }
-
-  return data.nickname;
-};
-
 serve(async (req) => {
   try {
     const supabase = createClient(
@@ -30,60 +16,64 @@ serve(async (req) => {
     }
 
     const { data: authData, error: authError } = await supabase.auth.getUser(token);
-
     if (authError || !authData?.user) {
       throw new Error("Unauthorized");
     }
 
-    const { match_id, invite_code, player_b_id, current_location } = await req.json();
+    const body = await req.json();
+    const invite_code: string = body.invite_code;
+    const player_b_id: string = body.player_b_id ?? authData.user.id;
+    const current_location = body.current_location ?? null; // optional
 
-    if (!match_id || !invite_code || !player_b_id || !current_location) {
-      throw new Error("Missing required fields");
+    if (!invite_code) {
+      throw new Error("Missing required field: invite_code");
     }
 
-    const lat = Number(current_location?.lat);
-    const lng = Number(current_location?.lng);
-
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      throw new Error("Invalid current_location coordinates");
-    }
-
-    const { data: match, error: matchError } = await supabase
+    // Find match by invite_code stored in match_metadata JSONB
+    const { data: matches, error: matchErr } = await supabase
       .from("matches")
       .select("id, player_a_id, status, venue_id, match_metadata")
-      .eq("id", match_id)
-      .maybeSingle();
+      .eq("status", "pending")
+      .filter("match_metadata->>invite_code", "eq", invite_code);
 
-    if (matchError || !match) {
-      throw new Error("Match not found");
+    if (matchErr) throw new Error(matchErr.message);
+    if (!matches || matches.length === 0) {
+      throw new Error("Invalid invite code or match not found");
     }
 
-    const storedInvite = match.match_metadata?.invite_code;
+    const match = matches[0];
 
-    if (storedInvite !== invite_code) {
-      throw new Error("Invalid invite code");
+    if (match.player_a_id === player_b_id) {
+      throw new Error("Cannot join your own match");
     }
 
-    if (match.status !== "pending") {
-      throw new Error("Match is not pending");
+    // Auto-upsert player_b in users table
+    await supabase
+      .from("users")
+      .upsert({ id: player_b_id }, { onConflict: "id", ignoreDuplicates: true });
+
+    // Optional LBS check
+    let distance_meters: number | null = null;
+    let is_lbs_verified = false;
+
+    if (current_location && match.venue_id) {
+      const lat = Number(current_location.lat);
+      const lng = Number(current_location.lng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const { data: venueData } = await supabase
+          .from("venues")
+          .select(
+            `distance_meters:ST_Distance(geo_location, ST_MakePoint(${lng}, ${lat})::geography)`,
+          )
+          .eq("id", match.venue_id)
+          .maybeSingle();
+
+        if (venueData?.distance_meters != null) {
+          distance_meters = venueData.distance_meters;
+          is_lbs_verified = distance_meters < 200;
+        }
+      }
     }
-
-    const { data: venueDistance, error: distanceError } = await supabase
-      .from("venues")
-      .select(
-        `distance_meters:ST_Distance(geo_location, ST_MakePoint(${lng}, ${lat})::geography)`,
-      )
-      .eq("id", match.venue_id)
-      .maybeSingle();
-
-    if (distanceError || !venueDistance) {
-      throw new Error("Failed to calculate distance");
-    }
-
-    const distance_meters = venueDistance.distance_meters;
-    const is_lbs_verified = typeof distance_meters === "number"
-      ? distance_meters < 100
-      : false;
 
     const { error: updateError } = await supabase
       .from("matches")
@@ -93,46 +83,23 @@ serve(async (req) => {
         is_lbs_verified,
         distance_meters,
       })
-      .eq("id", match_id);
+      .eq("id", match.id);
 
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
-
-    const player_a_name = await fetchNickname(supabase, match.player_a_id);
-    const player_b_name = await fetchNickname(supabase, player_b_id);
-
-    await supabase
-      .channel("plaza_events")
-      .send({
-        type: "broadcast",
-        event: "HANDSHAKE_SUCCESS",
-        payload: {
-          match_id,
-          player_a_name,
-          player_b_name,
-          status: "locked",
-        },
-      });
+    if (updateError) throw new Error(updateError.message);
 
     return new Response(
       JSON.stringify({
-        match_id,
+        match_id: match.id,
         status: "locked",
         is_lbs_verified,
         distance_meters,
       }),
-      {
-        headers: { "Content-Type": "application/json" },
-      },
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
     return new Response(
       JSON.stringify({ error: err.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 });

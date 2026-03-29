@@ -28,21 +28,21 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { player_a_id, venue_id, game_type } = await req.json();
+    const body = await req.json();
+    const venue_id = body.venue_id ?? null;
+    const game_type = body.game_type ?? null;
+    // Support both explicit player_a_id and auto-resolve from token
+    const player_a_id = body.player_a_id ?? authData.user.id;
 
-    if (!player_a_id || !venue_id || !game_type) {
-      throw new Error("Missing required fields");
+    if (!game_type) {
+      throw new Error("Missing required field: game_type");
     }
 
-    const { data: player, error: playerError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", player_a_id)
-      .maybeSingle();
-
-    if (playerError || !player) {
-      throw new Error("Player not found");
-    }
+    // Auto-upsert user row so new auth users don't cause "Player not found"
+    await supabase.from("users").upsert(
+      { id: player_a_id },
+      { onConflict: "id", ignoreDuplicates: true }
+    );
 
     const invite_code = generateInviteCode();
     const match_metadata = {
@@ -55,9 +55,11 @@ serve(async (req) => {
       .from("matches")
       .insert({
         player_a_id,
-        venue_id,
+        venue_id: venue_id || null,
         status: "pending",
         is_lbs_verified: false,
+        racks_won: 0,
+        racks_lost: 0,
         match_metadata,
       })
       .select("id")

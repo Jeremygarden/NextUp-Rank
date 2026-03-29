@@ -25,13 +25,26 @@ export default function ProfilePage() {
       const userId = session?.user?.id
       if (!userId) throw new Error('未登录')
 
+      // Auto-upsert: new auth users may not have a row in users table yet
       const { data: user, error: userErr } = await supabase
         .from('users')
+        .upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true })
         .select('nickname, rating, rd')
-        .eq('id', userId)
-        .single()
+        .maybeSingle()
+
+      // If upsert+select didn't return data, do a plain select
+      let profile = user
+      if (!profile && !userErr) {
+        const { data: fallback } = await supabase
+          .from('users')
+          .select('nickname, rating, rd')
+          .eq('id', userId)
+          .maybeSingle()
+        profile = fallback
+      }
+
       if (userErr) throw userErr
-      setProfile(user)
+      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '未命名', rating: 1500, rd: 200 })
 
       const { data: snaps, error: snapErr } = await supabase
         .from('rating_snapshots')
