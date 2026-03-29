@@ -4,3 +4,6 @@ improvement.md
 __pycache__/
 .env
 .vercel
+
+# Agent memory files (private)
+memory/
