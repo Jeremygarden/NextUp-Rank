@@ -3,3 +3,4 @@ improvement.md
 *.log
 __pycache__/
 .env
+.vercel
