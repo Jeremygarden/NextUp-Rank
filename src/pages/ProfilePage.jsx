@@ -26,9 +26,14 @@ export default function ProfilePage() {
       if (!userId) throw new Error('未登录')
 
       // Auto-upsert: new auth users may not have a row in users table yet
+      // Must include nickname (NOT NULL) when inserting; ignoreDuplicates skips update for existing rows
+      const defaultNickname = session.user.email?.split('@')[0] || '玩家'
       const { data: user, error: userErr } = await supabase
         .from('users')
-        .upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true })
+        .upsert(
+          { id: userId, nickname: defaultNickname },
+          { onConflict: 'id', ignoreDuplicates: true }
+        )
         .select('nickname, rating, rd')
         .maybeSingle()
 
