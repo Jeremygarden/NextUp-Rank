@@ -48,9 +48,10 @@ serve(async (req) => {
     }
 
     // Auto-upsert player_b in users table
+    const defaultNicknameB = authData.user.email?.split("@")[0] ?? "玩家";
     await supabase
       .from("users")
-      .upsert({ id: player_b_id }, { onConflict: "id", ignoreDuplicates: true });
+      .upsert({ id: player_b_id, nickname: defaultNicknameB }, { onConflict: "id", ignoreDuplicates: true });
 
     // Optional LBS check
     let distance_meters: number | null = null;

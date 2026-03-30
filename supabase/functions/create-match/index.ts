@@ -39,8 +39,10 @@ serve(async (req) => {
     }
 
     // Auto-upsert user row so new auth users don't cause "Player not found"
+    // Must include nickname (NOT NULL); use email prefix as default; ignoreDuplicates skips existing rows
+    const defaultNickname = authData.user.email?.split("@")[0] ?? "玩家";
     await supabase.from("users").upsert(
-      { id: player_a_id },
+      { id: player_a_id, nickname: defaultNickname },
       { onConflict: "id", ignoreDuplicates: true }
     );
 
