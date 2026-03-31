@@ -25,31 +25,16 @@ export default function ProfilePage() {
       const userId = session?.user?.id
       if (!userId) throw new Error('未登录')
 
-      // Auto-upsert: new auth users may not have a row in users table yet
-      // Must include nickname (NOT NULL) when inserting; ignoreDuplicates skips update for existing rows
-      const defaultNickname = session.user.email?.split('@')[0] || '玩家'
-      const { data: user, error: userErr } = await supabase
+      // users row is created automatically via on_auth_user_created trigger on signup
+      // just select here; fall back to defaults if row not yet present
+      const { data: profile, error: userErr } = await supabase
         .from('users')
-        .upsert(
-          { id: userId, nickname: defaultNickname },
-          { onConflict: 'id', ignoreDuplicates: true }
-        )
         .select('nickname, rating, rd')
+        .eq('id', userId)
         .maybeSingle()
 
-      // If upsert+select didn't return data, do a plain select
-      let profile = user
-      if (!profile && !userErr) {
-        const { data: fallback } = await supabase
-          .from('users')
-          .select('nickname, rating, rd')
-          .eq('id', userId)
-          .maybeSingle()
-        profile = fallback
-      }
-
       if (userErr) throw userErr
-      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '未命名', rating: 1500, rd: 200 })
+      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '玩家', rating: 1500, rd: 200 })
 
       const { data: snaps, error: snapErr } = await supabase
         .from('rating_snapshots')
