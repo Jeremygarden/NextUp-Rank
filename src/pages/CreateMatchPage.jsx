@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, ChevronLeft, Check } from 'lucide-react'
+import { Loader2, ChevronLeft, Check, Copy } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
 const GAME_TYPES = [
@@ -20,6 +20,17 @@ export default function CreateMatchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [codeCopied, setCodeCopied] = useState(false)
+
+  async function copyInviteCode() {
+    try {
+      await navigator.clipboard.writeText(result.invite_code)
+      setCodeCopied(true)
+      setTimeout(() => setCodeCopied(false), 2000)
+    } catch (e) {
+      console.error('Copy failed', e)
+    }
+  }
 
   useEffect(() => {
     if (step === 2) fetchVenues()
@@ -166,9 +177,27 @@ export default function CreateMatchPage() {
 
               <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
                 <p className="text-slate-400 text-sm mb-3">邀请码</p>
-                <div className="font-mono text-6xl font-black tracking-widest text-indigo-400 mb-6">
+                <div className="font-mono text-6xl font-black tracking-widest text-indigo-400 mb-4">
                   {result.invite_code}
                 </div>
+                <button
+                  onClick={copyInviteCode}
+                  className="relative flex items-center justify-center gap-2 mx-auto mb-6 px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"
+                >
+                  <Copy size={16} /> 复制邀请码
+                  <AnimatePresence>
+                    {codeCopied && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: -40 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="absolute left-1/2 -translate-x-1/2 bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-xl flex items-center gap-1"
+                      >
+                        <Check size={12} className="text-emerald-500" /> 已复制
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </button>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=NEXTUP:${result.invite_code}`}
                   alt="QR码"

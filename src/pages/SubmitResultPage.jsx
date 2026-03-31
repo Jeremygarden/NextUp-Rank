@@ -92,6 +92,12 @@ export default function SubmitResultPage() {
                 </motion.div>
               )}
 
+              {(racksWon === 0 && racksLost === 0) && (
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 text-slate-400 text-sm text-center">
+                  请至少输入一方的得分
+                </motion.p>
+              )}
+
               <button
                 onClick={handleSubmit}
                 disabled={loading || (racksWon === 0 && racksLost === 0)}

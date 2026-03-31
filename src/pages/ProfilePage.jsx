@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2, ChevronLeft, Info } from 'lucide-react'
+import { Loader2, ChevronLeft, Info, Pencil, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PerformancePulseGraph from '../ui/PerformancePulseGraph'
 
@@ -12,6 +12,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showRdTip, setShowRdTip] = useState(false)
+  const [editingNickname, setEditingNickname] = useState(false)
+  const [nicknameInput, setNicknameInput] = useState('')
+  const [nicknameLoading, setNicknameLoading] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -58,6 +61,22 @@ export default function ProfilePage() {
       }))
     : null
 
+  async function saveNickname() {
+    if (!nicknameInput.trim()) return
+    setNicknameLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+      await supabase.from('users').upsert({ id: userId, nickname: nicknameInput.trim() })
+      setProfile(p => ({ ...p, nickname: nicknameInput.trim() }))
+      setEditingNickname(false)
+    } catch (e) {
+      console.error('Failed to save nickname', e)
+    } finally {
+      setNicknameLoading(false)
+    }
+  }
+
   const initials = profile?.nickname ? profile.nickname.slice(0, 2).toUpperCase() : '?'
 
   return (
@@ -85,7 +104,34 @@ export default function ProfilePage() {
                 {initials}
               </div>
               <div>
-                <h2 className="text-2xl font-bold">{profile.nickname}</h2>
+                {editingNickname ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={nicknameInput}
+                      onChange={e => setNicknameInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveNickname(); if (e.key === 'Escape') setEditingNickname(false) }}
+                      autoFocus
+                      className="bg-slate-800 text-white text-xl font-bold rounded-lg px-3 py-1 outline-none focus:ring-2 focus:ring-indigo-500 w-40"
+                    />
+                    <button onClick={saveNickname} disabled={nicknameLoading} className="text-green-400 hover:text-green-300 transition-colors">
+                      {nicknameLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                    </button>
+                    <button onClick={() => setEditingNickname(false)} className="text-slate-400 hover:text-slate-200 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-bold">{profile.nickname}</h2>
+                    <button
+                      onClick={() => { setNicknameInput(profile.nickname); setEditingNickname(true) }}
+                      className="text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-slate-400 text-sm">RD: {Math.round(profile.rd)}</span>
                   <button onClick={() => setShowRdTip(t => !t)} className="text-slate-500 hover:text-slate-300 transition-colors">

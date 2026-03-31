@@ -40,16 +40,6 @@ export default function JoinMatchPage() {
     }
   }
 
-  const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
-
-  function handleDigit(d) {
-    if (d === '⌫') {
-      setCode(c => c.slice(0, -1))
-    } else if (d && code.length < 6) {
-      setCode(c => c + d)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
@@ -70,19 +60,19 @@ export default function JoinMatchPage() {
           <>
             <div className="mb-8 text-center">
               <h2 className="text-xl font-semibold mb-2">输入邀请码</h2>
-              <p className="text-slate-400 text-sm">请输入对手分享的 6 位邀请码</p>
+              <p className="text-slate-400 text-sm">请输入对手分享的 6 位邀请码（字母+数字）</p>
             </div>
 
-            <div className="flex gap-2 mb-8">
+            {/* Alphanumeric code display boxes */}
+            <div className="flex gap-2 mb-6">
               {[0,1,2,3,4,5].map(i => (
-                <div key={i} className={`w-12 h-16 flex items-center justify-center text-2xl font-mono font-black rounded-xl border-2 transition-colors
-                  ${code[i] ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-slate-700 bg-slate-900 text-slate-600'}`}>
-                  {code[i] || '·'}
+                <div key={i} className={`w-12 h-14 flex items-center justify-center text-xl font-mono font-bold rounded-lg border-2 transition-colors
+                  ${code[i] ? 'border-indigo-400 bg-indigo-500/10 text-indigo-200' : 'border-slate-700 bg-slate-900 text-slate-600'}`}>
+                  {code[i] || '—'}
                 </div>
               ))}
             </div>
 
-            {/* Text input for alphanumeric invite code */}
             <input
               type="text"
               value={code}
