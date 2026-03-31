@@ -2,18 +2,20 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import SquareLayout from '../ui/SquareLayout'
 import { Swords, QrCode, User } from 'lucide-react'
+import usePlazaEvents from '../hooks/usePlazaEvents'
 
 export default function PlazaPage() {
   const navigate = useNavigate()
+  const { matches, loading } = usePlazaEvents()
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <div className="flex-1">
         <SquareLayout
-          matches={[]}
-          loading={false}
-          venueId="demo"
-          venueName="本地球房"
+          matches={matches}
+          loading={loading}
+          venueId={null}
+          venueName="广场"
           players={[]}
         />
       </div>
