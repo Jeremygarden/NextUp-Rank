@@ -63,3 +63,54 @@ CREATE TABLE IF NOT EXISTS rating_snapshots (
 -- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_venues_geo ON venues USING GIST(geo_location);
 CREATE INDEX IF NOT EXISTS idx_snapshots_user_recent ON rating_snapshots (user_id, created_at DESC);
+
+-- ─── Auth Trigger: auto-create users row on signup ───────────────────────────
+-- Runs as SECURITY DEFINER so it bypasses RLS and can always insert.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.users (id, nickname)
+  VALUES (
+    new.id,
+    COALESCE(split_part(new.email, '@', 1), '玩家')
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ─── RLS Policies: users table ───────────────────────────────────────────────
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated users can read all profiles (leaderboard needs this)
+CREATE POLICY IF NOT EXISTS "users: authenticated can read"
+  ON public.users FOR SELECT
+  TO authenticated
+  USING (auth.uid() IS NOT NULL);
+
+-- Users can insert their own row (fallback if trigger missed)
+CREATE POLICY IF NOT EXISTS "users: can insert own row"
+  ON public.users FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
+
+-- Users can update their own profile
+CREATE POLICY IF NOT EXISTS "users: can update own profile"
+  ON public.users FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id);
+
+-- ─── Backfill: create users rows for existing auth users without one ──────────
+-- Safe to run multiple times (ON CONFLICT DO NOTHING)
+INSERT INTO public.users (id, nickname)
+SELECT
+  au.id,
+  COALESCE(split_part(au.email, '@', 1), '玩家')
+FROM auth.users au
+LEFT JOIN public.users u ON au.id = u.id
+WHERE u.id IS NULL;
