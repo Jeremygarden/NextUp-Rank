@@ -29,7 +29,7 @@ export default function LoginPage() {
         <form onSubmit={handleSignIn} className="flex flex-col gap-4">
           <input
             type="email"
-            placeholder="Email"
+            placeholder="邮箱"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
@@ -37,7 +37,7 @@ export default function LoginPage() {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="密码"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -49,12 +49,12 @@ export default function LoginPage() {
             disabled={loading}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
         <p className="text-slate-400 text-sm text-center mt-4">
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="text-indigo-400 hover:underline">Register</Link>
+          没有账号？{' '}
+          <Link to="/register" className="text-indigo-400 hover:underline">注册</Link>
         </p>
       </div>
     </div>

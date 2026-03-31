@@ -15,7 +15,7 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
     if (password !== confirm) {
-      setError('Passwords do not match')
+      setError('两次密码不一致')
       return
     }
     setLoading(true)
@@ -35,14 +35,14 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">Create Account</h1>
+        <h1 className="text-2xl font-bold text-white mb-6 text-center">创建账号</h1>
         {success ? (
-          <p className="text-green-400 text-center">Check your email to confirm your account</p>
+          <p className="text-green-400 text-center">请查收邮件，确认注册</p>
         ) : (
           <form onSubmit={handleSignUp} className="flex flex-col gap-4">
             <input
               type="text"
-              placeholder="Nickname"
+              placeholder="昵称"
               value={nickname}
               onChange={e => setNickname(e.target.value)}
               required
@@ -50,7 +50,7 @@ export default function RegisterPage() {
             />
             <input
               type="email"
-              placeholder="Email"
+              placeholder="邮箱"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -58,7 +58,7 @@ export default function RegisterPage() {
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder="密码"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -66,7 +66,7 @@ export default function RegisterPage() {
             />
             <input
               type="password"
-              placeholder="Confirm Password"
+              placeholder="确认密码"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
               required
@@ -78,13 +78,13 @@ export default function RegisterPage() {
               disabled={loading}
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Account'}
+              {loading ? '创建中...' : '创建账号'}
             </button>
           </form>
         )}
         <p className="text-slate-400 text-sm text-center mt-4">
-          Already have an account?{' '}
-          <Link to="/login" className="text-indigo-400 hover:underline">Sign In</Link>
+          已有账号？{' '}
+          <Link to="/login" className="text-indigo-400 hover:underline">登录</Link>
         </p>
       </div>
     </div>

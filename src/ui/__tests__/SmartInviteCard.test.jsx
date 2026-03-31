@@ -40,19 +40,19 @@ describe("SmartInviteCard", () => {
 
   test("displays correct role badge", () => {
     render(<SmartInviteCard {...defaultProps} role="Admin" />);
-    expect(screen.getByText("Admin")).toBeInTheDocument();
+    expect(screen.getByText("管理员")).toBeInTheDocument();
   });
 
   test("switches to Joined layout when status is Joined", () => {
     render(<SmartInviteCard {...defaultProps} status="Joined" />);
-    expect(screen.getByText("Matched Successfully")).toBeInTheDocument();
-    expect(screen.queryByText("Accept")).not.toBeInTheDocument();
+    expect(screen.getByText("对局已确认 ✓")).toBeInTheDocument();
+    expect(screen.queryByText("接受")).not.toBeInTheDocument();
   });
 
   test("switches to Expired layout when status is Expired", () => {
     render(<SmartInviteCard {...defaultProps} status="Expired" />);
-    expect(screen.getByText("Invitation Expired")).toBeInTheDocument();
-    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(screen.getByText("邀请已过期")).toBeInTheDocument();
+    expect(screen.getByText("已过期")).toBeInTheDocument();
   });
 
   test("countdown auto-expires when reaching zero", () => {
@@ -65,7 +65,7 @@ describe("SmartInviteCard", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(screen.getByText("Invitation Expired")).toBeInTheDocument();
+    expect(screen.getByText("邀请已过期")).toBeInTheDocument();
     vi.useRealTimers();
   });
 
@@ -76,13 +76,23 @@ describe("SmartInviteCard", () => {
     Object.assign(navigator, { clipboard: mockClipboard });
 
     render(<SmartInviteCard {...defaultProps} />);
-    const copyBtn = screen.getByRole("button", { name: /copy/i });
+    const copyBtn = screen.getByRole("button", { name: /复制/i });
     
     await act(async () => {
       fireEvent.click(copyBtn);
     });
 
     expect(mockClipboard.writeText).toHaveBeenCalledWith("https://test.link");
-    expect(screen.getByText("Copied")).toBeInTheDocument();
+    expect(screen.getByText("已复制")).toBeInTheDocument();
+  });
+
+  test("shows inviteCode when provided", () => {
+    render(<SmartInviteCard {...defaultProps} inviteCode="ABC123" />);
+    expect(screen.getByText("#ABC123")).toBeInTheDocument();
+  });
+
+  test("hides invite code element when inviteCode not provided", () => {
+    render(<SmartInviteCard {...defaultProps} />);
+    expect(screen.queryByText(/#/)).not.toBeInTheDocument();
   });
 });

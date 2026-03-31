@@ -55,14 +55,14 @@ const PerformancePulseGraph = ({ data: propData }) => {
     <div className="w-full h-80 bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-800">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-slate-100 font-bold text-lg">Performance Pulse</h3>
-          <p className="text-slate-400 text-xs">Based on BG-1 Weighted Algorithm (Recent 25)</p>
+          <h3 className="text-slate-100 font-bold text-lg">表现脉冲</h3>
+          <p className="text-slate-400 text-xs">基于 BG-1 加权算法（近25场）</p>
         </div>
         <div className="text-right">
           <span className="text-amber-400 font-mono text-2xl font-black">
             {data[data.length - 1]?.rating ?? '--'}
           </span>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest">Current Rating</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-widest">当前积分</p>
         </div>
       </div>
 
@@ -110,14 +110,14 @@ const PerformancePulseGraph = ({ data: propData }) => {
       </div>
 
       <div className="flex justify-between mt-4 text-[10px] text-slate-500 uppercase tracking-tighter">
-        <span>25 Matches Ago</span>
+        <span>25场前</span>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-blue-500/50"></span>
-          <span>Stable</span>
+          <span>稳定</span>
           <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span>Hot Streak</span>
+          <span>热手</span>
         </div>
-        <span>Latest</span>
+        <span>最新</span>
       </div>
     </div>
   );
