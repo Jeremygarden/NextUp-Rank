@@ -1,5 +1,6 @@
 import React from "react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
+import useLeaderboard from "../hooks/useLeaderboard";
 
 /**
  * NextUp-Rank: VenueLeaderboard
@@ -66,7 +67,37 @@ const DeltaBadge = ({ delta }) => {
   );
 };
 
-const VenueLeaderboard = ({ venueId, venueName, players = [] }) => {
+/**
+ * Map leaderboard API response items to the players array format.
+ * API: { user_id, nickname, rating, recent_delta, recent_25_snapshots }
+ * Component: { id, nickname, rating, recent_delta, recent_25_snapshots }
+ */
+const mapApiToPlayers = (apiData) =>
+  (apiData ?? []).map((item) => ({
+    id: item.user_id,
+    nickname: item.nickname,
+    rating: item.rating,
+    recent_delta: item.recent_delta,
+    recent_25_snapshots: item.recent_25_snapshots ?? [],
+  }));
+
+const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
+  // Self-fetch when venueId is provided and no players prop given
+  const shouldSelfFetch = venueId != null && playersProp == null;
+  const { data: fetchedData, loading: fetchLoading } = useLeaderboard(shouldSelfFetch ? venueId : undefined);
+
+  const players = shouldSelfFetch
+    ? mapApiToPlayers(fetchedData)
+    : (playersProp ?? []);
+
+  if (shouldSelfFetch && fetchLoading) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 text-sm">
+        加载中…
+      </div>
+    );
+  }
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
       {/* Header */}
