@@ -10,38 +10,52 @@ const generateInviteCode = () => {
 
 serve(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "").trim();
 
     if (!token) {
-      throw new Error("Missing authorization token");
+      return new Response(JSON.stringify({ error: "Missing authorization token" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    // Use user-scoped client so Supabase validates the JWT (supports ES256)
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
 
-    if (authError || !authData?.user) {
-      throw new Error("Unauthorized");
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
+
+    // Service client for DB writes (bypasses RLS)
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
     const body = await req.json();
     const venue_id = body.venue_id ?? null;
     const game_type = body.game_type ?? null;
-    // Support both explicit player_a_id and auto-resolve from token
-    const player_a_id = body.player_a_id ?? authData.user.id;
+    const player_a_id = user.id;
 
     if (!game_type) {
-      throw new Error("Missing required field: game_type");
+      return new Response(JSON.stringify({ error: "Missing required field: game_type" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Auto-upsert user row so new auth users don't cause "Player not found"
-    // Must include nickname (NOT NULL); use email prefix as default; ignoreDuplicates skips existing rows
-    const defaultNickname = authData.user.email?.split("@")[0] ?? "玩家";
-    await supabase.from("users").upsert(
+    const defaultNickname = user.email?.split("@")[0] ?? "玩家";
+    await supabaseAdmin.from("users").upsert(
       { id: player_a_id, nickname: defaultNickname },
       { onConflict: "id", ignoreDuplicates: true }
     );
@@ -53,7 +67,7 @@ serve(async (req) => {
       created_at: new Date().toISOString(),
     };
 
-    const { data: match, error: matchError } = await supabase
+    const { data: match, error: matchError } = await supabaseAdmin
       .from("matches")
       .insert({
         player_a_id,
@@ -72,22 +86,13 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        match_id: match.id,
-        invite_code,
-        status: "pending",
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-      },
+      JSON.stringify({ match_id: match.id, invite_code, status: "pending" }),
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
     return new Response(
       JSON.stringify({ error: err.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      },
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 });

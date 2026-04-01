@@ -3,34 +3,47 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "").trim();
 
     if (!token) {
-      throw new Error("Missing authorization token");
+      return new Response(JSON.stringify({ error: "Missing authorization token" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !authData?.user) {
-      throw new Error("Unauthorized");
+    // User-scoped client — lets Supabase validate ES256 JWT
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
     }
+
+    // Admin client for DB writes
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
     const body = await req.json();
     const invite_code: string = body.invite_code;
-    const player_b_id: string = body.player_b_id ?? authData.user.id;
-    const current_location = body.current_location ?? null; // optional
+    const player_b_id: string = body.player_b_id ?? user.id;
+    const current_location = body.current_location ?? null;
 
     if (!invite_code) {
       throw new Error("Missing required field: invite_code");
     }
 
-    // Find match by invite_code stored in match_metadata JSONB
-    const { data: matches, error: matchErr } = await supabase
+    const { data: matches, error: matchErr } = await supabaseAdmin
       .from("matches")
       .select("id, player_a_id, status, venue_id, match_metadata")
       .eq("status", "pending")
@@ -48,12 +61,12 @@ serve(async (req) => {
     }
 
     // Auto-upsert player_b in users table
-    const defaultNicknameB = authData.user.email?.split("@")[0] ?? "玩家";
-    await supabase
+    const defaultNicknameB = user.email?.split("@")[0] ?? "玩家";
+    await supabaseAdmin
       .from("users")
       .upsert({ id: player_b_id, nickname: defaultNicknameB }, { onConflict: "id", ignoreDuplicates: true });
 
-    // Optional LBS check
+    // LBS check — threshold is 100m (aligned with INTERFACE.md)
     let distance_meters: number | null = null;
     let is_lbs_verified = false;
 
@@ -61,7 +74,7 @@ serve(async (req) => {
       const lat = Number(current_location.lat);
       const lng = Number(current_location.lng);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        const { data: venueData } = await supabase
+        const { data: venueData } = await supabaseAdmin
           .from("venues")
           .select(
             `distance_meters:ST_Distance(geo_location, ST_MakePoint(${lng}, ${lat})::geography)`,
@@ -71,30 +84,20 @@ serve(async (req) => {
 
         if (venueData?.distance_meters != null) {
           distance_meters = venueData.distance_meters;
-          is_lbs_verified = distance_meters < 200;
+          is_lbs_verified = distance_meters < 100; // standardized to 100m
         }
       }
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("matches")
-      .update({
-        player_b_id,
-        status: "locked",
-        is_lbs_verified,
-        distance_meters,
-      })
+      .update({ player_b_id, status: "locked", is_lbs_verified, distance_meters })
       .eq("id", match.id);
 
     if (updateError) throw new Error(updateError.message);
 
     return new Response(
-      JSON.stringify({
-        match_id: match.id,
-        status: "locked",
-        is_lbs_verified,
-        distance_meters,
-      }),
+      JSON.stringify({ match_id: match.id, status: "locked", is_lbs_verified, distance_meters }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {

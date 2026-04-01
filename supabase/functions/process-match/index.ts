@@ -1,21 +1,15 @@
 // supabase/functions/process-match/index.ts
-// Standard Supabase Edge Function to process BG-1 match ratings
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const MATH_SERVICE_URL = Deno.env.get('MATH_SERVICE_URL')
 const MATH_SERVICE_KEY = Deno.env.get('MATH_SERVICE_KEY')
-const MATH_USE_MOCK = Deno.env.get('MATH_USE_MOCK') // 'true' | 'false' | undefined
+const MATH_USE_MOCK = Deno.env.get('MATH_USE_MOCK')
 
-// Feature switch guard: if explicitly disabled mock but URL not configured, fail fast
 if (MATH_USE_MOCK === 'false' && !MATH_SERVICE_URL) {
   throw new Error('MATH_USE_MOCK=false but MATH_SERVICE_URL is not configured')
 }
 
-// ─── BG-1 Mock (used when MATH_SERVICE_URL is not configured) ───────────────
-// Implements simplified Glicko-2 with rack-level S_adj factor.
-// Replace with real Python Math Service when deployed.
 function mockCalculateRating(params: {
   rating: number, rd: number, vol: number,
   racks_won: number, racks_lost: number,
@@ -25,7 +19,6 @@ function mockCalculateRating(params: {
   const total = racks_won + racks_lost
   const s_adj = total > 0 ? 0.5 + ((racks_won - racks_lost) / total) * 0.5 : 0.5
 
-  // Simplified Glicko-2 expected score
   const q = Math.log(10) / 400
   const g_rd = 1 / Math.sqrt(1 + 3 * q * q * opp_rd * opp_rd / (Math.PI * Math.PI))
   const e = 1 / (1 + Math.pow(10, -g_rd * (rating - opp_rating) / 400))
@@ -35,21 +28,46 @@ function mockCalculateRating(params: {
 
   const new_rating = Math.round((rating + delta) * 100) / 100
   const new_rd = Math.max(30, Math.sqrt(1 / (1 / (rd * rd) + 1 / d2)))
-  const new_vol = vol // simplified: skip Illinois algorithm for mock
+  const new_vol = vol
 
   return { new_rating, new_rd, new_vol }
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
   try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Missing authorization token" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // User-scoped client — validates ES256 JWT
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { match_id } = await req.json()
+
+    // Admin client for DB reads/writes
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // 1. Transactional Read
     const { data: matchData, error: lockError } = await supabase
       .rpc('lock_and_get_match_data', { mid: match_id })
 
@@ -67,8 +85,6 @@ serve(async (req) => {
 
     let new_rating: number, new_rd: number, new_vol: number
 
-    // 2. Call Math Service or fall back to mock
-    // useMock: true when MATH_USE_MOCK=true, or URL not set and not explicitly disabled
     const useMock = MATH_USE_MOCK === 'true' || (!MATH_SERVICE_URL && MATH_USE_MOCK !== 'false')
     if (!useMock) {
       const response = await fetch(`${MATH_SERVICE_URL}/calculate-rating`, {
@@ -82,28 +98,27 @@ serve(async (req) => {
       if (!response.ok) throw new Error(`Math calculation failed: ${response.statusText}`)
       ;({ new_rating, new_rd, new_vol } = await response.json())
     } else {
-      // [MOCK] Using built-in BG-1 approximation
-      // Triggered by: MATH_USE_MOCK=true, or MATH_SERVICE_URL not set
-      console.warn('[process-match] Using mock calculator (MATH_USE_MOCK or no URL)')
+      console.warn('[process-match] Using mock calculator')
       ;({ new_rating, new_rd, new_vol } = mockCalculateRating(params))
     }
 
-    // 3. Atomic Update
     const { error: updateError } = await supabase
       .rpc('atomic_update_user_rating', {
         target_user_id: matchData.player_a.id,
         new_rating,
         new_rd,
-        new_vol
+        new_vol,
+        p_match_id: match_id
       })
 
     if (updateError) throw new Error(`Atomic update failed: ${updateError.message}`)
 
     return new Response(JSON.stringify({
       status: 'success',
-      new_rating,
+      rating_before: matchData.player_a.rating,
+      rating_after: new_rating,
       new_rd,
-      mock: !MATH_SERVICE_URL || MATH_USE_MOCK === 'true'
+      mock: useMock
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
