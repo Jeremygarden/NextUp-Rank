@@ -12,17 +12,17 @@ const STATUS = {
 };
 
 const ROLES = {
-  Admin: { label: "Admin", bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400" },
-  Player: { label: "Player", bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-400" },
-  Spectator: { label: "Spectator", bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400" },
+  Admin: { label: "管理员", bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400" },
+  Player: { label: "球手", bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-400" },
+  Spectator: { label: "观众", bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400" },
 };
 
 const GAME_TYPES = {
-  "8ball": { label: "8-Ball", color: "bg-slate-800", text: "text-slate-100", border: "border-slate-700" },
-  "9ball": { label: "9-Ball", color: "bg-yellow-500/20", text: "text-yellow-500", border: "border-yellow-500/30" },
-  "10ball": { label: "10-Ball", color: "bg-blue-500/20", text: "text-blue-500", border: "border-blue-500/30" },
-  "straight": { label: "Straight Pool", color: "bg-red-500/20", text: "text-red-500", border: "border-red-500/30" },
-  "default": { label: "Custom", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+  "8ball": { label: "八球", color: "bg-slate-800", text: "text-slate-100", border: "border-slate-700" },
+  "9ball": { label: "九球", color: "bg-yellow-500/20", text: "text-yellow-500", border: "border-yellow-500/30" },
+  "10ball": { label: "十球", color: "bg-blue-500/20", text: "text-blue-500", border: "border-blue-500/30" },
+  "straight": { label: "直线球", color: "bg-red-500/20", text: "text-red-500", border: "border-red-500/30" },
+  "default": { label: "自定义", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
 };
 
 /**
@@ -67,6 +67,7 @@ const SmartInviteCard = ({
   role = "Player",
   inviteUrl = "https://nextup.rank/match/123",
   expiresInSeconds = 3600,
+  inviteCode,
 }) => {
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(expiresInSeconds);
@@ -93,7 +94,7 @@ const SmartInviteCard = ({
 
   const isExpired = currentStatus === STATUS.EXPIRED || timeLeft <= 0;
   const gameStyle = isExpired 
-    ? { label: "Expired", color: "bg-slate-950/80", text: "text-slate-500", border: "border-slate-800" }
+    ? { label: "已过期", color: "bg-slate-950/80", text: "text-slate-500", border: "border-slate-800" }
     : (GAME_TYPES[gameType] || GAME_TYPES.default);
 
   return (
@@ -115,9 +116,11 @@ const SmartInviteCard = ({
           <CountdownBadge seconds={timeLeft} />
         )}
 
-        <div className="bg-white/10 px-2 py-1 rounded text-[10px] text-white/60 font-mono">
-          #INV-2024
-        </div>
+        {inviteCode && (
+          <div className="bg-white/10 px-2 py-1 rounded text-[10px] text-white/60 font-mono">
+            #{inviteCode}
+          </div>
+        )}
       </div>
 
       <div className="p-6">
@@ -129,7 +132,7 @@ const SmartInviteCard = ({
           <div>
             <div className="flex items-center gap-2">
               <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
-                {currentStatus === STATUS.JOINED ? "Confirmed With" : "Request From"}
+                {currentStatus === STATUS.JOINED ? "已匹配" : "来自"}
               </p>
               <RoleBadge role={role} />
             </div>
@@ -166,7 +169,7 @@ const renderActions = (status, onCopy, copied) => {
   if (status === STATUS.JOINED) {
     return (
       <div className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-4 rounded-2xl font-bold text-center">
-        Matched Successfully
+        对局已确认 ✓
       </div>
     );
   }
@@ -174,7 +177,7 @@ const renderActions = (status, onCopy, copied) => {
   if (status === STATUS.EXPIRED) {
     return (
       <div className="w-full bg-slate-800/50 text-slate-500 border border-slate-700/50 py-4 rounded-2xl font-bold text-center italic">
-        Invitation Expired
+        邀请已过期
       </div>
     );
   }
@@ -182,14 +185,14 @@ const renderActions = (status, onCopy, copied) => {
   return (
     <>
       <button className="flex-[2] bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
-        Accept <ChevronRight className="w-4 h-4" />
+        接受 <ChevronRight className="w-4 h-4" />
       </button>
       <button 
         className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group" 
         onClick={onCopy}
       >
         <div className="flex items-center justify-center gap-2">
-          <Copy className="w-4 h-4" /> Copy
+          <Copy className="w-4 h-4" /> 复制
         </div>
         
         <AnimatePresence>
@@ -200,7 +203,7 @@ const renderActions = (status, onCopy, copied) => {
               exit={{ opacity: 0, scale: 0.8 }}
               className="absolute left-1/2 -translate-x-1/2 bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-xl flex items-center gap-1"
             >
-              <Check className="w-3 h-3 text-emerald-500" /> Copied
+              <Check className="w-3 h-3 text-emerald-500" /> 已复制
             </motion.div>
           )}
         </AnimatePresence>
