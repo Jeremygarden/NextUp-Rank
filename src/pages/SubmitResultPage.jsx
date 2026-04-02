@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react'
@@ -29,6 +29,158 @@ function Counter({ label, value, onChange }) {
   )
 }
 
+// Pending confirmation component with polling fallback
+// TODO: Replace polling with realtime subscription once backend emits RESULT_CONFIRMED event
+function PendingConfirmation({ matchId, submitResult, navigate }) {
+  const [confirmState, setConfirmState] = useState('waiting') // waiting | slow | confirmed
+  const [pollCount, setPollCount] = useState(0)
+  const pollRef = useRef(null)
+  const channelRef = useRef(null)
+
+  const delta = submitResult ? (submitResult.rating_after - submitResult.rating_before) : 0
+
+  useEffect(() => {
+    // Try realtime first
+    // TODO: Replace event name once backend confirms the broadcast event for opponent confirmation
+    const channel = supabase
+      .channel('plaza_events_confirm')
+      .on('broadcast', { event: 'RESULT_CONFIRMED' }, ({ payload }) => {
+        if (payload?.match_id === matchId) {
+          setConfirmState('confirmed')
+        }
+      })
+      .subscribe()
+    channelRef.current = channel
+
+    // Polling fallback: check match status every 5s
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('matches')
+          .select('status, confirmed_at')
+          .eq('id', matchId)
+          .single()
+
+        if (data?.status === 'confirmed' || data?.confirmed_at) {
+          setConfirmState('confirmed')
+          clearInterval(pollRef.current)
+          return
+        }
+      } catch (e) {
+        // silently ignore poll errors
+      }
+      setPollCount(c => {
+        const next = c + 1
+        if (next >= 2) {
+          // 10 seconds passed (2 polls × 5s), show slow message
+          setConfirmState(prev => prev === 'waiting' ? 'slow' : prev)
+        }
+        return next
+      })
+    }, 5000)
+
+    return () => {
+      clearInterval(pollRef.current)
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+    }
+  }, [matchId])
+
+  // Auto-navigate 2s after confirmed
+  useEffect(() => {
+    if (confirmState !== 'confirmed') return
+    const timer = setTimeout(() => navigate('/'), 2000)
+    return () => clearTimeout(timer)
+  }, [confirmState, navigate])
+
+  if (confirmState === 'confirmed') {
+    return (
+      <motion.div key="confirmed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-sm">
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring' }}
+          className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${delta >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}
+        >
+          {delta >= 0
+            ? <TrendingUp className="text-green-400" size={40} />
+            : <TrendingDown className="text-red-400" size={40} />
+          }
+        </motion.div>
+
+        <h2 className="text-2xl font-bold mb-2">比赛结算完成</h2>
+        <p className="text-slate-400 text-sm mb-6">对手已确认</p>
+
+        <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-slate-400">积分变化</span>
+            <motion.span
+              initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+              className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-green-400' : 'text-red-400'}`}
+            >
+              {delta >= 0 ? '+' : ''}{Math.round(delta)}
+            </motion.span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-400">新积分</span>
+            <motion.span
+              initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
+              className="text-3xl font-black font-mono text-indigo-400"
+            >
+              {Math.round(submitResult.rating_after)}
+            </motion.span>
+          </div>
+        </div>
+
+        <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+          返回广场
+        </button>
+        <p className="text-slate-500 text-xs mt-3 text-center">2 秒后自动跳转...</p>
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center w-full max-w-sm">
+      <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-6">
+        <div className="flex gap-1">
+          {[0, 1, 2].map(i => (
+            <motion.div
+              key={i}
+              animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+              transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
+              className="w-2 h-2 rounded-full bg-indigo-400"
+            />
+          ))}
+        </div>
+      </div>
+
+      <h2 className="text-xl font-bold mb-2">已提交，等待对手确认...</h2>
+
+      {confirmState === 'slow' && (
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+          <p className="text-slate-400 text-sm">对手确认中，通常当面很快完成</p>
+        </motion.div>
+      )}
+
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5 mb-6 text-left">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-slate-400">比赛 ID</span>
+          <span className="font-mono text-slate-300 text-xs">{matchId?.slice(0, 8)}...</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-slate-400">状态</span>
+          <span className="text-amber-400 font-medium">等待确认</span>
+        </div>
+      </div>
+
+      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+        返回广场
+      </button>
+    </motion.div>
+  )
+}
+
 export default function SubmitResultPage() {
   const navigate = useNavigate()
   const { matchId: paramMatchId } = useParams()
@@ -39,14 +191,8 @@ export default function SubmitResultPage() {
   const [racksLost, setRacksLost] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [result, setResult] = useState(null)
-
-  // Auto-navigate to home 2s after successful submit
-  useEffect(() => {
-    if (!result) return
-    const timer = setTimeout(() => navigate('/'), 2000)
-    return () => clearTimeout(timer)
-  }, [result, navigate])
+  const [submitResult, setSubmitResult] = useState(null) // submitted → pending confirmation
+  const [phase, setPhase] = useState('form') // form | pending
 
   async function handleSubmit() {
     setLoading(true)
@@ -64,15 +210,14 @@ export default function SubmitResultPage() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || '提交失败')
-      setResult(json)
+      setSubmitResult(json)
+      setPhase('pending')
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
   }
-
-  const delta = result ? (result.rating_after - result.rating_before) : 0
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -85,8 +230,16 @@ export default function SubmitResultPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
-          {!result ? (
+          {phase === 'form' && (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-sm">
+              {/* Instruction card */}
+              <div className="flex items-start gap-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-6">
+                <span className="text-xl">💡</span>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  由你提交比赛结果，对手确认后即完成
+                </p>
+              </div>
+
               <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
                 <div className="flex justify-around">
                   <Counter label="我赢的局数" value={racksWon} onChange={setRacksWon} />
@@ -116,46 +269,15 @@ export default function SubmitResultPage() {
                 {loading ? <><Loader2 className="animate-spin" size={20} />提交中...</> : '确认提交'}
               </button>
             </motion.div>
-          ) : (
-            <motion.div key="result" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-sm">
-              <motion.div
-                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring' }}
-                className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${delta >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}
-              >
-                {delta >= 0
-                  ? <TrendingUp className="text-green-400" size={40} />
-                  : <TrendingDown className="text-red-400" size={40} />
-                }
-              </motion.div>
+          )}
 
-              <h2 className="text-2xl font-bold mb-6">结果已提交</h2>
-
-              <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-slate-400">积分变化</span>
-                  <motion.span
-                    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                    className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-green-400' : 'text-red-400'}`}
-                  >
-                    {delta >= 0 ? '+' : ''}{Math.round(delta)}
-                  </motion.span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">新积分</span>
-                  <motion.span
-                    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-                    className="text-3xl font-black font-mono text-indigo-400"
-                  >
-                    {Math.round(result.rating_after)}
-                  </motion.span>
-                </div>
-              </div>
-
-              <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
-                返回广场
-              </button>
-              <p className="text-slate-500 text-xs mt-3 text-center">2 秒后自动跳转...</p>
-            </motion.div>
+          {phase === 'pending' && submitResult && (
+            <PendingConfirmation
+              key="pending"
+              matchId={matchId}
+              submitResult={submitResult}
+              navigate={navigate}
+            />
           )}
         </AnimatePresence>
       </div>

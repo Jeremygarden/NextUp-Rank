@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import { Loader2, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import LBSHandshakeAnimation from '../ui/LBSHandshakeAnimation'
+import GlobalTabBar from '../ui/GlobalTabBar'
 
 export default function JoinMatchPage() {
   const navigate = useNavigate()
@@ -41,10 +43,13 @@ export default function JoinMatchPage() {
         const friendly = Object.entries(friendlyMap).find(([k]) => lowerErr.includes(k))
         throw new Error(friendly ? friendly[1] : rawErr)
       }
+      // Store session user info for animation
+      const userMeta = session?.user?.user_metadata
+      json._playerB = {
+        nickname: userMeta?.nickname || userMeta?.full_name || session?.user?.email?.split('@')[0] || '我',
+        rating: userMeta?.rating || 1500,
+      }
       setSuccess(json)
-      setTimeout(() => {
-        navigate(`/submit/${json.match_id}`, { state: { matchId: json.match_id } })
-      }, 1500)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -63,11 +68,11 @@ export default function JoinMatchPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {success ? (
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-            <CheckCircle2 className="text-green-400 mx-auto mb-4" size={64} />
-            <h2 className="text-2xl font-bold mb-2">握手成功</h2>
-            <p className="text-slate-400">对局已锁定，正在跳转...</p>
-          </motion.div>
+          <LBSHandshakeAnimation
+            playerA={success.initiator || { nickname: '对手', rating: 1500 }}
+            playerB={success._playerB || { nickname: '我', rating: 1500 }}
+            onComplete={() => navigate(`/submit/${success.match_id}`, { state: { matchId: success.match_id } })}
+          />
         ) : (
           <>
             <div className="mb-8 text-center">
@@ -112,6 +117,7 @@ export default function JoinMatchPage() {
           </>
         )}
       </div>
+      <GlobalTabBar />
     </div>
   )
 }
