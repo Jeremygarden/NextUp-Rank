@@ -19,8 +19,9 @@ const usePlazaEvents = () => {
 
   useEffect(() => {
     const upsertMatch = (incoming) => {
+      // Fix #6: guard – drop payloads that have no resolvable match_id
       if (!incoming.id) {
-        setMatches((prev) => [incoming, ...prev]);
+        console.warn('[usePlazaEvents] upsertMatch: missing match_id, dropping payload', incoming);
         return;
       }
 

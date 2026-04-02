@@ -62,16 +62,75 @@ serve(async (req) => {
 
     const { match_id } = await req.json()
 
+    if (!match_id) {
+      return new Response(JSON.stringify({ error: 'match_id is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     // Admin client for DB reads/writes
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // Fix #5: atomic concurrency lock — only one invocation proceeds when status='locked'
+    // If another concurrent call already flipped status to 'processing', this returns nothing
+    const { data: lockRow, error: atomicLockError } = await supabase
+      .from('matches')
+      .update({ status: 'processing' })
+      .eq('id', match_id)
+      .eq('status', 'locked')
+      .select('id')
+      .maybeSingle()
+
+    if (atomicLockError) {
+      return new Response(JSON.stringify({ error: `Atomic lock failed: ${atomicLockError.message}` }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!lockRow) {
+      // Either already processing/completed or match not found — safe to skip
+      return new Response(JSON.stringify({ error: 'Match not eligible for processing (already processing, completed, or not found)' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Fix #4: handle missing lock_and_get_match_data RPC gracefully
     const { data: matchData, error: lockError } = await supabase
       .rpc('lock_and_get_match_data', { mid: match_id })
 
-    if (lockError || !matchData) throw new Error(`Lock failed: ${lockError?.message}`)
+    if (lockError) {
+      // Check if the error is because the RPC doesn't exist (code PGRST202 / 42883)
+      const isRpcMissing = lockError.code === 'PGRST202' || lockError.code === '42883' ||
+        lockError.message?.includes('function') && lockError.message?.includes('does not exist')
+
+      if (isRpcMissing) {
+        return new Response(JSON.stringify({
+          error: 'RPC lock_and_get_match_data is not defined. Please run the required database migration.',
+          hint: 'supabase/migrations/*_add_lock_and_get_match_data.sql',
+        }), {
+          status: 501,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(JSON.stringify({ error: `Lock RPC failed: ${lockError.message}` }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!matchData) {
+      return new Response(JSON.stringify({ error: 'Match data not found or already processed' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
 
     const params = {
       rating: matchData.player_a.rating,

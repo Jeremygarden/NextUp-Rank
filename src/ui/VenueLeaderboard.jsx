@@ -124,7 +124,11 @@ const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
 
       {/* Rows */}
       {players.length === 0 ? (
-        <div className="py-12 text-center text-slate-600 text-sm">暂无数据</div>
+        <div className="py-16 text-center">
+          <p className="text-3xl mb-3">🏆</p>
+          <p className="text-slate-400 font-medium">排行榜暂无数据</p>
+          <p className="text-slate-600 text-sm mt-1">完成对局后即可上榜</p>
+        </div>
       ) : (
         <ul className="divide-y divide-slate-800/60">
           {players.map((player, idx) => {

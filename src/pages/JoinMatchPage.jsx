@@ -28,7 +28,19 @@ export default function JoinMatchPage() {
         body: JSON.stringify({ invite_code: code.toUpperCase(), player_b_id: userId }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || '加入失败')
+      if (!res.ok) {
+        // Normalize common error messages to Chinese
+        const rawErr = json.error || '加入失败'
+        const friendlyMap = {
+          'invite code not found': '邀请码不存在，请确认后重试',
+          'invite code expired': '邀请码已过期，请让对手重新创建对局',
+          'match already has two players': '该对局已满员',
+          'cannot join your own match': '不能加入自己创建的对局',
+        }
+        const lowerErr = rawErr.toLowerCase()
+        const friendly = Object.entries(friendlyMap).find(([k]) => lowerErr.includes(k))
+        throw new Error(friendly ? friendly[1] : rawErr)
+      }
       setSuccess(json)
       setTimeout(() => {
         navigate(`/submit/${json.match_id}`, { state: { matchId: json.match_id } })
@@ -43,7 +55,7 @@ export default function JoinMatchPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
-        <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-100 transition-colors">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-lg font-bold">加入对局</h1>

@@ -70,17 +70,28 @@ const SmartInviteCard = ({
   inviteCode,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(expiresInSeconds);
-  const [currentStatus, setCurrentStatus] = useState(initialStatus);
+  // Fix #7: expiresInSeconds <= 0 → immediately expired
+  const [timeLeft, setTimeLeft] = useState(() => Math.max(0, expiresInSeconds));
+  const [currentStatus, setCurrentStatus] = useState(() =>
+    expiresInSeconds <= 0 ? STATUS.EXPIRED : initialStatus
+  );
 
+  // Fix #1: timer effect only depends on currentStatus, never on timeLeft
+  // This prevents teardown/recreate every second (memory leak + drift)
   useEffect(() => {
-    if (currentStatus !== STATUS.PENDING || timeLeft <= 0) {
-      if (timeLeft <= 0) setCurrentStatus(STATUS.EXPIRED);
-      return;
-    }
-    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    if (currentStatus !== STATUS.PENDING) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
     return () => clearInterval(timer);
-  }, [currentStatus, timeLeft]);
+  }, [currentStatus]);
+
+  // Fix #1: separate effect to flip status when countdown hits 0
+  useEffect(() => {
+    if (timeLeft === 0 && currentStatus === STATUS.PENDING) {
+      setCurrentStatus(STATUS.EXPIRED);
+    }
+  }, [timeLeft, currentStatus]);
 
   const handleCopy = async () => {
     try {

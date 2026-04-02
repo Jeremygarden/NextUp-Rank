@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import SmartInviteCard from "./SmartInviteCard";
@@ -102,6 +103,7 @@ const SquareLayout = ({
 };
 
 const PlazaPane = ({ matches, loading }) => {
+  const navigate = useNavigate();
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
@@ -113,10 +115,16 @@ const PlazaPane = ({ matches, loading }) => {
 
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
-        <span className="text-4xl">🎱</span>
-        <p className="text-base font-medium">暂无活动邀请</p>
-        <p className="text-xs text-slate-600">周边暂时没有人发起对局，稍后再来看看</p>
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
+        <span className="text-5xl">🎱</span>
+        <p className="text-base font-medium text-slate-300">暂无活动对局</p>
+        <p className="text-sm text-slate-500 text-center px-8">周边暂时没有人发起对局，成为第一个发起者吧！</p>
+        <button
+          onClick={() => navigate('/create-match')}
+          className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-colors"
+        >
+          发起对局
+        </button>
       </div>
     );
   }
