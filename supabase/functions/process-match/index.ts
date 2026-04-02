@@ -2,6 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 const MATH_SERVICE_URL = Deno.env.get('MATH_SERVICE_URL')
 const MATH_SERVICE_KEY = Deno.env.get('MATH_SERVICE_KEY')
 const MATH_USE_MOCK = Deno.env.get('MATH_USE_MOCK')
@@ -34,6 +40,9 @@ function mockCalculateRating(params: {
 }
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "").trim();
@@ -65,7 +74,7 @@ serve(async (req) => {
     if (!match_id) {
       return new Response(JSON.stringify({ error: 'match_id is required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -88,7 +97,7 @@ serve(async (req) => {
     if (atomicLockError) {
       return new Response(JSON.stringify({ error: `Atomic lock failed: ${atomicLockError.message}` }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -96,7 +105,7 @@ serve(async (req) => {
       // Either already processing/completed or match not found — safe to skip
       return new Response(JSON.stringify({ error: 'Match not eligible for processing (already processing, completed, or not found)' }), {
         status: 409,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -115,20 +124,20 @@ serve(async (req) => {
           hint: 'supabase/migrations/*_add_lock_and_get_match_data.sql',
         }), {
           status: 501,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
 
       return new Response(JSON.stringify({ error: `Lock RPC failed: ${lockError.message}` }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     if (!matchData) {
       return new Response(JSON.stringify({ error: 'Match data not found or already processed' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -228,13 +237,13 @@ serve(async (req) => {
       new_rd,
       mock: useMock
     }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
