@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Check, Copy, MapPin, AlertTriangle, Wifi } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import GlobalTabBar from '../ui/GlobalTabBar'
 
 const GAME_TYPES = [
   { id: '8ball', label: '八球', emoji: '🎱' },
@@ -444,6 +445,7 @@ export default function CreateMatchPage() {
           )}
         </AnimatePresence>
       </div>
+      <GlobalTabBar />
     </div>
   )
 }
