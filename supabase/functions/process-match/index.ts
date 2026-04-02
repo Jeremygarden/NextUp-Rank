@@ -60,7 +60,7 @@ serve(async (req) => {
       });
     }
 
-    const { match_id } = await req.json()
+    const { match_id, racks_won: reqRacksWon, racks_lost: reqRacksLost } = await req.json()
 
     if (!match_id) {
       return new Response(JSON.stringify({ error: 'match_id is required' }), {
@@ -132,12 +132,22 @@ serve(async (req) => {
       })
     }
 
+    // Resolve racks: prefer request-supplied values over DB values
+    const resolvedRacksWon = reqRacksWon ?? matchData.racks_won ?? 0
+    const resolvedRacksLost = reqRacksLost ?? matchData.racks_lost ?? 0
+
+    // Persist resolved racks back to matches table
+    await supabase
+      .from('matches')
+      .update({ racks_won: resolvedRacksWon, racks_lost: resolvedRacksLost })
+      .eq('id', match_id)
+
     const params = {
       rating: matchData.player_a.rating,
       rd: matchData.player_a.rd,
       vol: matchData.player_a.vol,
-      racks_won: matchData.racks_won,
-      racks_lost: matchData.racks_lost,
+      racks_won: resolvedRacksWon,
+      racks_lost: resolvedRacksLost,
       opp_rating: matchData.player_b.rating,
       opp_rd: matchData.player_b.rd
     }
@@ -145,21 +155,28 @@ serve(async (req) => {
     let new_rating: number, new_rd: number, new_vol: number
 
     const useMock = MATH_USE_MOCK === 'true' || (!MATH_SERVICE_URL && MATH_USE_MOCK !== 'false')
-    if (!useMock) {
+
+    async function callMathService(p: typeof params) {
       const response = await fetch(`${MATH_SERVICE_URL}/calculate-rating`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-API-KEY': MATH_SERVICE_KEY ?? ''
         },
-        body: JSON.stringify(params)
+        body: JSON.stringify(p)
       })
       if (!response.ok) throw new Error(`Math calculation failed: ${response.statusText}`)
-      ;({ new_rating, new_rd, new_vol } = await response.json())
+      return response.json() as Promise<{ new_rating: number, new_rd: number, new_vol: number }>
+    }
+
+    if (!useMock) {
+      ;({ new_rating, new_rd, new_vol } = await callMathService(params))
     } else {
       console.warn('[process-match] Using mock calculator')
       ;({ new_rating, new_rd, new_vol } = mockCalculateRating(params))
     }
+
+    const rating_before = matchData.player_a.rating
 
     const { error: updateError } = await supabase
       .rpc('atomic_update_user_rating', {
@@ -172,9 +189,41 @@ serve(async (req) => {
 
     if (updateError) throw new Error(`Atomic update failed: ${updateError.message}`)
 
+    // Player B: racks swapped (B's wins = A's losses and vice versa)
+    const paramsB = {
+      rating: matchData.player_b.rating,
+      rd: matchData.player_b.rd,
+      vol: matchData.player_b.vol,
+      racks_won: resolvedRacksLost,   // B wins = A losses
+      racks_lost: resolvedRacksWon,   // B losses = A wins
+      opp_rating: matchData.player_a.rating,
+      opp_rd: matchData.player_a.rd
+    }
+
+    let resultB: { new_rating: number, new_rd: number, new_vol: number }
+    if (!useMock) {
+      resultB = await callMathService(paramsB)
+    } else {
+      resultB = mockCalculateRating(paramsB)
+    }
+
+    const { error: updateErrorB } = await supabase
+      .rpc('atomic_update_user_rating', {
+        target_user_id: matchData.player_b.id,
+        new_rating: resultB.new_rating,
+        new_rd: resultB.new_rd,
+        new_vol: resultB.new_vol,
+        p_match_id: match_id
+      })
+
+    if (updateErrorB) throw new Error(`Atomic update (player_b) failed: ${updateErrorB.message}`)
+
     return new Response(JSON.stringify({
       status: 'success',
-      rating_before: matchData.player_a.rating,
+      player_a: { rating_before, rating_after: new_rating, new_rd },
+      player_b: { rating_before: matchData.player_b.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
+      // Legacy compat fields
+      rating_before,
       rating_after: new_rating,
       new_rd,
       mock: useMock
