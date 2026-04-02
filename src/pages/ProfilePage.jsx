@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { Loader2, ChevronLeft, Info, Pencil, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PerformancePulseGraph from '../ui/PerformancePulseGraph'
+import GlobalTabBar from '../ui/GlobalTabBar'
+import { getRankInfo } from '../lib/rankColor'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
@@ -175,6 +177,16 @@ export default function ProfilePage() {
               >
                 {Math.round(profile.rating)}
               </motion.div>
+              {(() => {
+                const rank = getRankInfo(profile.rating)
+                return (
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
+                    style={{ backgroundColor: rank.color + '33', color: rank.color, border: `1px solid ${rank.color}66` }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
+                    {rank.label}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Graph */}
@@ -191,6 +203,7 @@ export default function ProfilePage() {
           </motion.div>
         )}
       </div>
+      <GlobalTabBar />
     </div>
   )
 }
