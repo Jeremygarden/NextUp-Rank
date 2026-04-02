@@ -96,6 +96,19 @@ serve(async (req) => {
 
     if (updateError) throw new Error(updateError.message);
 
+    // Broadcast HANDSHAKE_SUCCESS to plaza_events for real-time frontend updates
+    await supabaseAdmin.channel('plaza_events').send({
+      type: 'broadcast',
+      event: 'HANDSHAKE_SUCCESS',
+      payload: {
+        match_id: match.id,
+        player_a_name: null,
+        player_b_name: defaultNicknameB,
+        status: 'locked',
+        is_lbs_verified,
+      }
+    })
+
     return new Response(
       JSON.stringify({ match_id: match.id, status: "locked", is_lbs_verified, distance_meters }),
       { headers: { "Content-Type": "application/json" } },
