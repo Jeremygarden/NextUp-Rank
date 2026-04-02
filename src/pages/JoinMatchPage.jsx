@@ -38,10 +38,13 @@ export default function JoinMatchPage() {
           'invite code expired': '邀请码已过期，请让对手重新创建对局',
           'match already has two players': '该对局已满员',
           'cannot join your own match': '不能加入自己创建的对局',
+          'invalid invite code': '邀请码无效，请检查后重试',
+          'match not found': '对局不存在或已过期',
+          'not found': '邀请码不存在，请确认后重试',
         }
         const lowerErr = rawErr.toLowerCase()
         const friendly = Object.entries(friendlyMap).find(([k]) => lowerErr.includes(k))
-        throw new Error(friendly ? friendly[1] : rawErr)
+        throw new Error(friendly ? friendly[1] : '加入失败，请检查邀请码后重试')
       }
       // Store session user info for animation
       const userMeta = session?.user?.user_metadata
