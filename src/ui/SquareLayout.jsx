@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import SmartInviteCard from "./SmartInviteCard";
 import VenueLeaderboard from "./VenueLeaderboard";
+import { getRankInfo } from "../lib/rankColor";
 
 /**
  * NextUp-Rank: SquareLayout
@@ -131,18 +132,32 @@ const PlazaPane = ({ matches, loading }) => {
 
   return (
     <div className="p-4 space-y-4">
-      {matches.map((match, idx) => (
-        <div key={match.id ?? idx}>
-          {match.distanceMeters !== undefined && (
-            <p className="text-xs text-slate-500 mb-1 pl-1">
-              📍 {match.distanceMeters < 1000
-                ? `${match.distanceMeters}m`
-                : `${(match.distanceMeters / 1000).toFixed(1)}km`}
-            </p>
-          )}
-          <SmartInviteCard {...match} />
-        </div>
-      ))}
+      {matches.map((match, idx) => {
+        const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
+        const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null
+        return (
+          <div key={match.id ?? idx}>
+            {match.distanceMeters !== undefined && (
+              <p className="text-xs text-slate-500 mb-1 pl-1">
+                📍 {match.distanceMeters < 1000
+                  ? `${match.distanceMeters}m`
+                  : `${(match.distanceMeters / 1000).toFixed(1)}km`}
+              </p>
+            )}
+            {rankInfo && (
+              <div className="flex items-center gap-1.5 mb-1 pl-1">
+                <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: rankInfo.color }} />
+                <span className="text-xs font-medium" style={{ color: rankInfo.color }}>
+                  {rankInfo.label} · {inviterRating.toFixed(0)}
+                </span>
+              </div>
+            )}
+            <SmartInviteCard {...match} />
+          </div>
+        )
+      })}
+    </div>
+  );
     </div>
   );
 };

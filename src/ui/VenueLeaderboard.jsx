@@ -1,6 +1,7 @@
 import React from "react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import useLeaderboard from "../hooks/useLeaderboard";
+import { getRankInfo } from "../lib/rankColor";
 
 /**
  * NextUp-Rank: VenueLeaderboard
@@ -161,10 +162,18 @@ const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
                 </div>
 
                 {/* Rating */}
-                <span className="text-right text-amber-400 font-mono font-bold text-sm">
-                  {typeof player.rating === "number"
-                    ? player.rating.toFixed(0)
-                    : "—"}
+                <span className="text-right font-mono font-bold text-sm flex items-center justify-end gap-1">
+                  {typeof player.rating === "number" ? (
+                    <>
+                      <span
+                        className="w-2 h-2 rounded-full inline-block flex-shrink-0"
+                        style={{ backgroundColor: getRankInfo(player.rating).color }}
+                      />
+                      <span style={{ color: getRankInfo(player.rating).color }}>
+                        {player.rating.toFixed(0)}
+                      </span>
+                    </>
+                  ) : "—"}
                 </span>
 
                 {/* Delta */}
