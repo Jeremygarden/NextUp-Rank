@@ -71,7 +71,7 @@ export default function CreateMatchPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
-        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)} className="text-slate-400 hover:text-slate-100 transition-colors">
+        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-lg font-bold">发起对局</h1>
@@ -153,7 +153,12 @@ export default function CreateMatchPage() {
                   <span className="font-bold">{venues.find(v => v.id === selectedVenue)?.name || '未指定'}</span>
                 </div>
               </div>
-              {error && <p className="text-red-400 mb-4 text-sm bg-red-400/10 p-3 rounded-xl">{error}</p>}
+              {error && (
+                <div className="mb-4 text-red-400 text-sm bg-red-400/10 border border-red-400/20 p-3 rounded-xl">
+                  <p>创建失败：{error}</p>
+                  <button onClick={handleConfirm} className="text-red-300 underline text-xs mt-1">点击重试</button>
+                </div>
+              )}
               <button
                 onClick={handleConfirm}
                 disabled={loading}

@@ -82,7 +82,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
-        <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-100 transition-colors">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-lg font-bold">我的主页</h1>
@@ -90,7 +90,26 @@ export default function ProfilePage() {
 
       <div className="flex-1 p-6">
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-indigo-400" size={40} /></div>
+          <div className="animate-pulse space-y-6 pt-4">
+            {/* Avatar + name skeleton */}
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-full bg-slate-800" />
+              <div className="space-y-2 flex-1">
+                <div className="h-6 w-32 bg-slate-800 rounded-lg" />
+                <div className="h-4 w-20 bg-slate-800 rounded-lg" />
+              </div>
+            </div>
+            {/* Rating skeleton */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-3">
+              <div className="h-4 w-20 bg-slate-800 rounded mx-auto" />
+              <div className="h-16 w-32 bg-slate-800 rounded-xl mx-auto" />
+            </div>
+            {/* Graph skeleton */}
+            <div className="space-y-2">
+              <div className="h-4 w-24 bg-slate-800 rounded" />
+              <div className="h-32 bg-slate-900 border border-slate-800 rounded-2xl" />
+            </div>
+          </div>
         ) : error ? (
           <div className="text-center py-20">
             <p className="text-red-400 mb-4">{error}</p>
@@ -114,10 +133,10 @@ export default function ProfilePage() {
                       autoFocus
                       className="bg-slate-800 text-white text-xl font-bold rounded-lg px-3 py-1 outline-none focus:ring-2 focus:ring-indigo-500 w-40"
                     />
-                    <button onClick={saveNickname} disabled={nicknameLoading} className="text-green-400 hover:text-green-300 transition-colors">
+                    <button onClick={saveNickname} disabled={nicknameLoading} aria-label="保存昵称" className="text-green-400 hover:text-green-300 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                       {nicknameLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                     </button>
-                    <button onClick={() => setEditingNickname(false)} className="text-slate-400 hover:text-slate-200 transition-colors">
+                    <button onClick={() => setEditingNickname(false)} aria-label="取消编辑" className="text-slate-400 hover:text-slate-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                       <X size={16} />
                     </button>
                   </div>
@@ -126,7 +145,8 @@ export default function ProfilePage() {
                     <h2 className="text-2xl font-bold">{profile.nickname}</h2>
                     <button
                       onClick={() => { setNicknameInput(profile.nickname); setEditingNickname(true) }}
-                      className="text-slate-500 hover:text-slate-300 transition-colors"
+                      aria-label="编辑昵称"
+                      className="text-slate-500 hover:text-slate-300 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                     >
                       <Pencil size={14} />
                     </button>
@@ -134,7 +154,7 @@ export default function ProfilePage() {
                 )}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-slate-400 text-sm">RD: {Math.round(profile.rd)}</span>
-                  <button onClick={() => setShowRdTip(t => !t)} className="text-slate-500 hover:text-slate-300 transition-colors">
+                  <button onClick={() => setShowRdTip(t => !t)} aria-label="了解 RD 含义" className="text-slate-500 hover:text-slate-300 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                     <Info size={14} />
                   </button>
                 </div>

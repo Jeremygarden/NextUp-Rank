@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react'
@@ -11,6 +11,7 @@ function Counter({ label, value, onChange }) {
       <div className="flex items-center gap-4">
         <button
           onClick={() => onChange(Math.max(0, value - 1))}
+          aria-label={`减少${label}`}
           className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors"
         >
           <Minus size={20} />
@@ -18,6 +19,7 @@ function Counter({ label, value, onChange }) {
         <span className="text-5xl font-black font-mono w-16 text-center tabular-nums">{value}</span>
         <button
           onClick={() => onChange(value + 1)}
+          aria-label={`增加${label}`}
           className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors"
         >
           <Plus size={20} />
@@ -38,6 +40,13 @@ export default function SubmitResultPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+
+  // Auto-navigate to home 2s after successful submit
+  useEffect(() => {
+    if (!result) return
+    const timer = setTimeout(() => navigate('/'), 2000)
+    return () => clearTimeout(timer)
+  }, [result, navigate])
 
   async function handleSubmit() {
     setLoading(true)
@@ -68,7 +77,7 @@ export default function SubmitResultPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
-        <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-100 transition-colors">
+        <button onClick={() => navigate(-1)} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-lg font-bold">提交比赛结果</h1>
@@ -87,8 +96,9 @@ export default function SubmitResultPage() {
               </div>
 
               {error && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 text-red-400 text-sm bg-red-400/10 p-3 rounded-xl text-center">
-                  {error}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 text-red-400 text-sm bg-red-400/10 border border-red-400/20 p-3 rounded-xl text-center">
+                  <p>提交失败：{error}</p>
+                  <p className="text-red-400/70 text-xs mt-1">请检查网络连接后重试</p>
                 </motion.div>
               )}
 
@@ -144,6 +154,7 @@ export default function SubmitResultPage() {
               <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
                 返回广场
               </button>
+              <p className="text-slate-500 text-xs mt-3 text-center">2 秒后自动跳转...</p>
             </motion.div>
           )}
         </AnimatePresence>
