@@ -17,3 +17,12 @@ dist/
 pnpm-lock.yaml
 *.pyc
 >>>>>>> origin/draft/condescending-lumiere
+
+
+# OpenClaw agent internal files — not part of the project
+SOUL.md
+TOOLS.md
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+USER.md

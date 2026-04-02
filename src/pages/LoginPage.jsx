@@ -16,7 +16,15 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) {
-      setError(error.message)
+      const msg = error.message?.toLowerCase() || ''
+      const friendly = msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('email not confirmed')
+        ? '邮箱或密码错误，请重新输入'
+        : msg.includes('too many requests') || msg.includes('rate limit')
+        ? '请求过于频繁，请稍后再试'
+        : msg.includes('user not found') || msg.includes('no user')
+        ? '该账号不存在，请先注册'
+        : '登录失败，请稍后重试'
+      setError(friendly)
     } else {
       navigate('/')
     }
