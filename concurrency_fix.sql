@@ -9,13 +9,20 @@ CREATE OR REPLACE FUNCTION atomic_update_user_rating(
     new_rating FLOAT,
     new_rd FLOAT,
     new_vol FLOAT,
-    new_last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    new_last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    p_match_id UUID DEFAULT NULL,
+    p_rating_before FLOAT DEFAULT NULL,
+    p_opponent_id UUID DEFAULT NULL,
+    p_opponent_rating FLOAT DEFAULT NULL
 )
 RETURNS VOID AS $$
+DECLARE
+    v_rating_before FLOAT;
 BEGIN
+    -- Capture current rating before update (for snapshot)
+    SELECT rating INTO v_rating_before FROM users WHERE id = target_user_id;
+
     -- FOR UPDATE locks the row until the transaction completes
-    -- This prevents other processes from reading the old rating and calculating based on it
-    -- while this update is in progress.
     UPDATE users
     SET 
         rating = new_rating,
@@ -24,10 +31,30 @@ BEGIN
         last_active_at = new_last_active_at
     WHERE id = target_user_id;
 
-    -- Note: In a true high-concurrency race, the calculation itself should 
-    -- happen inside a transaction. However, since Glicko-2 calculations
-    -- are complex, locking the row during the final UPDATE is the 
-    -- standard safety measure for Supabase/PostgreSQL environments.
+    -- Write rating snapshot if match_id provided
+    IF p_match_id IS NOT NULL THEN
+        INSERT INTO rating_snapshots (
+            user_id,
+            match_id,
+            rating_before,
+            rating_after,
+            rd_after,
+            vol_after,
+            rating_delta,
+            opponent_id,
+            opponent_rating_at_match
+        ) VALUES (
+            target_user_id,
+            p_match_id,
+            COALESCE(p_rating_before, v_rating_before),
+            new_rating,
+            new_rd,
+            new_vol,
+            new_rating - COALESCE(p_rating_before, v_rating_before),
+            p_opponent_id,
+            p_opponent_rating
+        );
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 

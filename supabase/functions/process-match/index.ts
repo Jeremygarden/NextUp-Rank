@@ -2,6 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 const MATH_SERVICE_URL = Deno.env.get('MATH_SERVICE_URL')
 const MATH_SERVICE_KEY = Deno.env.get('MATH_SERVICE_KEY')
 const MATH_USE_MOCK = Deno.env.get('MATH_USE_MOCK')
@@ -34,6 +40,9 @@ function mockCalculateRating(params: {
 }
 
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "").trim();
@@ -60,12 +69,12 @@ serve(async (req) => {
       });
     }
 
-    const { match_id } = await req.json()
+    const { match_id, racks_won: reqRacksWon, racks_lost: reqRacksLost } = await req.json()
 
     if (!match_id) {
       return new Response(JSON.stringify({ error: 'match_id is required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -88,7 +97,7 @@ serve(async (req) => {
     if (atomicLockError) {
       return new Response(JSON.stringify({ error: `Atomic lock failed: ${atomicLockError.message}` }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -96,7 +105,7 @@ serve(async (req) => {
       // Either already processing/completed or match not found — safe to skip
       return new Response(JSON.stringify({ error: 'Match not eligible for processing (already processing, completed, or not found)' }), {
         status: 409,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -115,29 +124,39 @@ serve(async (req) => {
           hint: 'supabase/migrations/*_add_lock_and_get_match_data.sql',
         }), {
           status: 501,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
 
       return new Response(JSON.stringify({ error: `Lock RPC failed: ${lockError.message}` }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     if (!matchData) {
       return new Response(JSON.stringify({ error: 'Match data not found or already processed' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    // Resolve racks: prefer request-supplied values over DB values
+    const resolvedRacksWon = reqRacksWon ?? matchData.racks_won ?? 0
+    const resolvedRacksLost = reqRacksLost ?? matchData.racks_lost ?? 0
+
+    // Persist resolved racks back to matches table
+    await supabase
+      .from('matches')
+      .update({ racks_won: resolvedRacksWon, racks_lost: resolvedRacksLost })
+      .eq('id', match_id)
 
     const params = {
       rating: matchData.player_a.rating,
       rd: matchData.player_a.rd,
       vol: matchData.player_a.vol,
-      racks_won: matchData.racks_won,
-      racks_lost: matchData.racks_lost,
+      racks_won: resolvedRacksWon,
+      racks_lost: resolvedRacksLost,
       opp_rating: matchData.player_b.rating,
       opp_rd: matchData.player_b.rd
     }
@@ -145,21 +164,28 @@ serve(async (req) => {
     let new_rating: number, new_rd: number, new_vol: number
 
     const useMock = MATH_USE_MOCK === 'true' || (!MATH_SERVICE_URL && MATH_USE_MOCK !== 'false')
-    if (!useMock) {
+
+    async function callMathService(p: typeof params) {
       const response = await fetch(`${MATH_SERVICE_URL}/calculate-rating`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-API-KEY': MATH_SERVICE_KEY ?? ''
         },
-        body: JSON.stringify(params)
+        body: JSON.stringify(p)
       })
       if (!response.ok) throw new Error(`Math calculation failed: ${response.statusText}`)
-      ;({ new_rating, new_rd, new_vol } = await response.json())
+      return response.json() as Promise<{ new_rating: number, new_rd: number, new_vol: number }>
+    }
+
+    if (!useMock) {
+      ;({ new_rating, new_rd, new_vol } = await callMathService(params))
     } else {
       console.warn('[process-match] Using mock calculator')
       ;({ new_rating, new_rd, new_vol } = mockCalculateRating(params))
     }
+
+    const rating_before = matchData.player_a.rating
 
     const { error: updateError } = await supabase
       .rpc('atomic_update_user_rating', {
@@ -167,25 +193,63 @@ serve(async (req) => {
         new_rating,
         new_rd,
         new_vol,
-        p_match_id: match_id
+        p_match_id: match_id,
+        p_rating_before: matchData.player_a.rating,
+        p_opponent_id: matchData.player_b.id,
+        p_opponent_rating: matchData.player_b.rating
       })
 
     if (updateError) throw new Error(`Atomic update failed: ${updateError.message}`)
 
+    // Player B: racks swapped (B's wins = A's losses and vice versa)
+    const paramsB = {
+      rating: matchData.player_b.rating,
+      rd: matchData.player_b.rd,
+      vol: matchData.player_b.vol,
+      racks_won: resolvedRacksLost,   // B wins = A losses
+      racks_lost: resolvedRacksWon,   // B losses = A wins
+      opp_rating: matchData.player_a.rating,
+      opp_rd: matchData.player_a.rd
+    }
+
+    let resultB: { new_rating: number, new_rd: number, new_vol: number }
+    if (!useMock) {
+      resultB = await callMathService(paramsB)
+    } else {
+      resultB = mockCalculateRating(paramsB)
+    }
+
+    const { error: updateErrorB } = await supabase
+      .rpc('atomic_update_user_rating', {
+        target_user_id: matchData.player_b.id,
+        new_rating: resultB.new_rating,
+        new_rd: resultB.new_rd,
+        new_vol: resultB.new_vol,
+        p_match_id: match_id,
+        p_rating_before: matchData.player_b.rating,
+        p_opponent_id: matchData.player_a.id,
+        p_opponent_rating: matchData.player_a.rating
+      })
+
+    if (updateErrorB) throw new Error(`Atomic update (player_b) failed: ${updateErrorB.message}`)
+
     return new Response(JSON.stringify({
       status: 'success',
-      rating_before: matchData.player_a.rating,
+      player_a: { rating_before, rating_after: new_rating, new_rd },
+      player_b: { rating_before: matchData.player_b.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
+      // Legacy compat fields
+      rating_before,
       rating_after: new_rating,
       new_rd,
       mock: useMock
     }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })

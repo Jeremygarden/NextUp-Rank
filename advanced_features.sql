@@ -31,8 +31,8 @@ DECLARE
     farming_weight FLOAT := 1.0;
 BEGIN
     -- Distance Check (LBS)
-    -- If distance > 200m or LBS not verified, cut weight by 50%
-    IF NEW.distance_meters > 200 OR NEW.is_lbs_verified = FALSE THEN
+    -- If distance > 100m or LBS not verified, cut weight by 50%
+    IF NEW.distance_meters > 100 OR NEW.is_lbs_verified = FALSE THEN
         dist_weight := 0.5;
     END IF;
 
