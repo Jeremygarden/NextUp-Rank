@@ -42,15 +42,15 @@ if [ -n "$EXISTING_PR" ]; then
   echo "♻️  复用已有 PR #$EXISTING_PR"
   PR_NUMBER="$EXISTING_PR"
 else
-  # 创建新 PR
-  PR_NUMBER=$(gh pr create \
+  # 创建新 PR（输出是 PR URL，从中提取编号）
+  PR_URL=$(gh pr create \
     --base "$BASE_BRANCH" \
     --head "$DRAFT_BRANCH" \
     --title "$PR_TITLE" \
     --body "Auto-merged from \`$DRAFT_BRANCH\` by merge-to-main.sh" \
-    --repo "$REPO" \
-    --json number --jq '.number')
-  echo "✅ 创建 PR #$PR_NUMBER"
+    --repo "$REPO")
+  PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+  echo "✅ 创建 PR #$PR_NUMBER: $PR_URL"
 fi
 
 # Squash merge
