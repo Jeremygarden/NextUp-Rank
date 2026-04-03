@@ -43,6 +43,10 @@ const usePlazaEvents = () => {
     // ── 1. Fetch existing pending matches from DB ──────────────────────────
     const fetchInitial = async () => {
       const since = new Date(Date.now() - FRESH_WINDOW_MS).toISOString();
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+
       const { data, error: fetchErr } = await supabase
         .from('matches')
         .select(`
@@ -50,6 +54,7 @@ const usePlazaEvents = () => {
           status,
           is_lbs_verified,
           created_at,
+          player_a_id,
           match_metadata,
           player_a:users!matches_player_a_id_fkey ( nickname, rating )
         `)
@@ -77,6 +82,7 @@ const usePlazaEvents = () => {
         player_name: row.player_a?.nickname ?? '玩家',
         rating: row.player_a?.rating ?? null,
         venue_name: null,
+        isOwn: row.player_a_id === currentUserId,
       }));
 
       setMatches(normalized);
@@ -93,6 +99,10 @@ const usePlazaEvents = () => {
       })
       .on('broadcast', { event: 'HANDSHAKE_SUCCESS' }, ({ payload }) => {
         // Match is now locked — remove it from the open-invitation list
+        const id = extractMatchId(payload);
+        if (id) removeMatch(id);
+      })
+      .on('broadcast', { event: 'MATCH_ABANDONED' }, ({ payload }) => {
         const id = extractMatchId(payload);
         if (id) removeMatch(id);
       })

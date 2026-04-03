@@ -303,6 +303,14 @@ export default function SubmitResultPage() {
   const [myRatingBefore, setMyRatingBefore] = useState(null)
   const [initLoading, setInitLoading] = useState(true)
   const [initError, setInitError] = useState(null)
+  const [opponentAbandoned, setOpponentAbandoned] = useState(false)
+
+  const currentUserIdRef = useRef(null)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      currentUserIdRef.current = session?.user?.id
+    })
+  }, [])
 
   // Form state
   const [racksWon, setRacksWon] = useState(0)
@@ -318,6 +326,20 @@ export default function SubmitResultPage() {
   const [abandonLoading, setAbandonLoading] = useState(false)
 
   const channelRef = useRef(null)
+
+  // Listen for opponent abandoning the match
+  useEffect(() => {
+    if (!matchId) return
+    const channel = supabase
+      .channel('plaza_events_abandon_' + matchId)
+      .on('broadcast', { event: 'MATCH_ABANDONED' }, ({ payload }) => {
+        if (payload?.match_id !== matchId) return
+        if (payload?.abandoned_by === currentUserIdRef.current) return
+        setOpponentAbandoned(true)
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [matchId])
 
   function handleBack() {
     if (phase === 'settled' || phase === null) {
@@ -461,6 +483,23 @@ export default function SubmitResultPage() {
           {phase === 'confirm' ? '确认比赛结果' : phase === 'settled' ? '比赛结算' : '提交比赛结果'}
         </h1>
       </div>
+
+      {opponentAbandoned && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3"
+        >
+          <span className="text-xl">👋</span>
+          <div>
+            <p className="text-amber-400 font-bold text-sm">对手已退出比赛</p>
+            <p className="text-slate-400 text-xs mt-1">当前对局已结束，你的比赛记录不受影响</p>
+          </div>
+          <button onClick={() => navigate('/')} className="ml-auto text-slate-400 hover:text-slate-200 text-xs underline">
+            返回广场
+          </button>
+        </motion.div>
+      )}
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {initLoading && (

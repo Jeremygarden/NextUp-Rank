@@ -173,7 +173,14 @@ const PlazaPane = ({ matches, loading }) => {
                 </span>
               </div>
             )}
-            <SmartInviteCard {...match} onAccept={() => handleAccept(match)} />
+            {match.isOwn && (
+              <div className="flex items-center gap-1.5 mb-1 pl-1">
+                <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                  ✦ 我发起
+                </span>
+              </div>
+            )}
+            <SmartInviteCard {...match} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
           </div>
         )
       })}
