@@ -95,7 +95,7 @@ export default function ProfilePage() {
         <h1 className="text-lg font-bold">我的主页</h1>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 overflow-y-auto p-6 pb-8">
         {loading ? (
           <div className="animate-pulse space-y-6 pt-4">
             {/* Avatar + name skeleton */}
@@ -195,7 +195,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Graph */}
-            <div className="mb-10">
+            <div className="mb-6">
               <h3 className="text-base font-semibold mb-3 text-slate-300">积分历史</h3>
               {snapshots.length === 0 ? (
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center text-slate-400">
@@ -209,7 +209,7 @@ export default function ProfilePage() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/60 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-8 mb-4"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/60 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-4 mb-2"
             >
               <LogOut size={16} />
               退出登录

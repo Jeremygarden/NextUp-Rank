@@ -52,7 +52,7 @@ const PerformancePulseGraph = ({ data: propData }) => {
   };
 
   return (
-    <div className="w-full h-80 bg-slate-900 p-6 pb-4 rounded-2xl shadow-2xl border border-slate-800">
+    <div className="w-full bg-slate-900 p-4 sm:p-6 pb-4 rounded-2xl shadow-2xl border border-slate-800">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-slate-100 font-bold text-lg">表现脉冲</h3>
@@ -66,7 +66,7 @@ const PerformancePulseGraph = ({ data: propData }) => {
         </div>
       </div>
 
-      <div className="h-56">
+      <div className="h-48 sm:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <defs>
