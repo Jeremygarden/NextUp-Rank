@@ -94,7 +94,7 @@ function PendingConfirmation({ matchId, navigate, onConfirmed, myRatingBefore })
 
   useEffect(() => {
     const channel = supabase
-      .channel('plaza_events_pending_' + matchId)
+      .channel('plaza_events')
       .on('broadcast', { event: 'RESULT_CONFIRMED' }, ({ payload }) => {
         if (payload?.match_id !== matchId) return
         // Find our result from payload by user id
@@ -331,7 +331,7 @@ export default function SubmitResultPage() {
     if (phase !== 'form' || !matchId) return
 
     const channel = supabase
-      .channel('plaza_events_form_' + matchId)
+      .channel('plaza_events')
       .on('broadcast', { event: 'SCORE_SUBMITTED' }, async ({ payload }) => {
         if (payload?.match_id !== matchId) return
         // Other player submitted — refresh match and go to confirm
