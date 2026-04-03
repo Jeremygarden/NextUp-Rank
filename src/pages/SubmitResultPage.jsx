@@ -4,6 +4,45 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 
+function AbandonModal({ onConfirm, onCancel, loading }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full"
+      >
+        <div className="text-center mb-6">
+          <span className="text-4xl mb-3 block">⚠️</span>
+          <h3 className="text-lg font-bold mb-2">确认退出比赛？</h3>
+          <p className="text-slate-400 text-sm leading-relaxed">
+            中途退赛将终止当前对局，双方比赛记录将被取消。
+          </p>
+          <p className="text-amber-400 text-xs mt-2 font-medium">
+            ⚡ 中途退赛会影响你的信誉度评分（Karma）
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 border border-slate-600 text-slate-300 font-bold py-3 rounded-2xl transition-colors hover:border-slate-400"
+          >
+            继续比赛
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="animate-spin" size={16} /> : null}
+            确认退出
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 function Counter({ label, value, onChange }) {
   return (
     <div className="flex flex-col items-center gap-3">
@@ -275,7 +314,40 @@ export default function SubmitResultPage() {
   const [phase, setPhase] = useState(null)
   const [settlementResult, setSettlementResult] = useState(null)
 
+  const [showAbandonModal, setShowAbandonModal] = useState(false)
+  const [abandonLoading, setAbandonLoading] = useState(false)
+
   const channelRef = useRef(null)
+
+  function handleBack() {
+    if (phase === 'settled' || phase === null) {
+      navigate(-1)
+      return
+    }
+    setShowAbandonModal(true)
+  }
+
+  async function confirmAbandon() {
+    setAbandonLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      await fetch('https://tesdzxnmffmaxylcpjia.supabase.co/functions/v1/abandon-match', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ match_id: matchId }),
+      })
+      navigate('/')
+    } catch (e) {
+      navigate('/')
+    } finally {
+      setAbandonLoading(false)
+      setShowAbandonModal(false)
+    }
+  }
 
   const fetchMatch = useCallback(async () => {
     return supabase
@@ -382,7 +454,7 @@ export default function SubmitResultPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <div className="flex items-center gap-3 p-4 border-b border-slate-800">
-        <button onClick={() => navigate(-1)} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <button onClick={handleBack} aria-label="返回" className="text-slate-400 hover:text-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-lg font-bold">
@@ -486,6 +558,14 @@ export default function SubmitResultPage() {
           </AnimatePresence>
         )}
       </div>
+
+      {showAbandonModal && (
+        <AbandonModal
+          onConfirm={confirmAbandon}
+          onCancel={() => setShowAbandonModal(false)}
+          loading={abandonLoading}
+        />
+      )}
     </div>
   )
 }

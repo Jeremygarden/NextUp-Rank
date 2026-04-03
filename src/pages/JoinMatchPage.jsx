@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Loader2, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
@@ -8,7 +8,8 @@ import GlobalTabBar from '../ui/GlobalTabBar'
 
 export default function JoinMatchPage() {
   const navigate = useNavigate()
-  const [code, setCode] = useState('')
+  const [searchParams] = useSearchParams()
+  const [code, setCode] = useState(searchParams.get('code')?.toUpperCase() || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)

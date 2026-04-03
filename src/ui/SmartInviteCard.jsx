@@ -68,6 +68,8 @@ const SmartInviteCard = ({
   inviteUrl = "https://nextup.rank/match/123",
   expiresInSeconds = 3600,
   inviteCode,
+  onAccept,
+  matchId,
 }) => {
   const [copied, setCopied] = useState(false);
   // Fix #7: expiresInSeconds <= 0 → immediately expired
@@ -159,7 +161,7 @@ const SmartInviteCard = ({
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {renderActions(currentStatus, handleCopy, copied)}
+          {renderActions(currentStatus, handleCopy, copied, onAccept, isExpired)}
         </div>
       </div>
     </motion.div>
@@ -176,7 +178,7 @@ const DetailItem = ({ icon, text }) => (
   </div>
 );
 
-const renderActions = (status, onCopy, copied) => {
+const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
   if (status === STATUS.JOINED) {
     return (
       <div className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-4 rounded-2xl font-bold text-center">
@@ -195,7 +197,11 @@ const renderActions = (status, onCopy, copied) => {
 
   return (
     <>
-      <button className="flex-[2] bg-white hover:bg-slate-100 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
+      <button
+        onClick={onAccept}
+        disabled={!onAccept || isExpired}
+        className="flex-[2] bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+      >
         接受 <ChevronRight className="w-4 h-4" />
       </button>
       <button 

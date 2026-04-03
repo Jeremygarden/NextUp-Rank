@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import SmartInviteCard from "./SmartInviteCard";
 import VenueLeaderboard from "./VenueLeaderboard";
 import { getRankInfo } from "../lib/rankColor";
+import { supabase } from "../lib/supabaseClient";
 
 /**
  * NextUp-Rank: SquareLayout
@@ -105,6 +106,26 @@ const SquareLayout = ({
 
 const PlazaPane = ({ matches, loading }) => {
   const navigate = useNavigate();
+
+  async function handleAccept(match) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+
+    const { data: activeMatch } = await supabase
+      .from('matches')
+      .select('id, status')
+      .or(`player_a_id.eq.${userId},player_b_id.eq.${userId}`)
+      .in('status', ['locked', 'awaiting_confirmation', 'processing'])
+      .maybeSingle()
+
+    if (activeMatch) {
+      alert('你目前已在一场对局中，请先完成或退出当前对局')
+      return
+    }
+
+    navigate(`/join?code=${match.invite_code}`)
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
@@ -152,7 +173,7 @@ const PlazaPane = ({ matches, loading }) => {
                 </span>
               </div>
             )}
-            <SmartInviteCard {...match} />
+            <SmartInviteCard {...match} onAccept={() => handleAccept(match)} />
           </div>
         )
       })}
