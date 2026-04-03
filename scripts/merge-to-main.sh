@@ -57,8 +57,6 @@ fi
 echo "🔀 Squash merging PR #$PR_NUMBER..."
 gh pr merge "$PR_NUMBER" \
   --squash \
-  --auto \
-  --delete-branch=false \
   --repo "$REPO"
 
 # 等待 merge 完成
