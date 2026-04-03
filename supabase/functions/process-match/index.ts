@@ -61,15 +61,38 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
+    // Verify caller is a participant in this match
+    const { data: matchCheck } = await supabase
+      .from('matches')
+      .select('player_a_id, player_b_id, status')
+      .eq('id', match_id)
+      .maybeSingle()
+
+    if (!matchCheck) {
+      return new Response(JSON.stringify({ error: 'Match not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (matchCheck.player_a_id !== user.id && matchCheck.player_b_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'You are not a participant in this match' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // Atomic concurrency lock — flip status from 'locked' → 'awaiting_confirmation'
+    // Either player can submit first; submitted_by records who did
     const { data: lockRow, error: atomicLockError } = await supabase
       .from('matches')
       .update({
         status: 'awaiting_confirmation',
         player_a_racks_won: racks_won,
         player_a_racks_lost: racks_lost,
+        submitted_by: user.id,
         score_submitted_at: new Date().toISOString(),
-        // Also write legacy fields for backwards-compat display
+        // Legacy compat
         racks_won,
         racks_lost,
       })
@@ -92,13 +115,13 @@ serve(async (req) => {
       })
     }
 
-    // Broadcast SCORE_SUBMITTED so player_b is notified
+    // Broadcast SCORE_SUBMITTED so the other player is notified
     await supabase
       .channel('plaza_events')
       .send({
         type: 'broadcast',
         event: 'SCORE_SUBMITTED',
-        payload: { match_id, racks_won, racks_lost }
+        payload: { match_id, racks_won, racks_lost, submitted_by: user.id }
       })
 
     return new Response(JSON.stringify({

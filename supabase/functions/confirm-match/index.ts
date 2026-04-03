@@ -85,10 +85,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Pre-check: verify match status and that caller is player_b
+    // Pre-check: verify match status and that caller is the OTHER player (not the one who submitted)
     const { data: preCheck, error: preCheckError } = await supabase
       .from('matches')
-      .select('id, status, player_b_id')
+      .select('id, status, player_a_id, player_b_id, submitted_by')
       .eq('id', match_id)
       .maybeSingle()
 
@@ -113,8 +113,16 @@ serve(async (req) => {
       })
     }
 
-    if (preCheck.player_b_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Only player_b can confirm the match result' }), {
+    // Only the OTHER participant (not the submitter) can confirm
+    if (preCheck.submitted_by === user.id) {
+      return new Response(JSON.stringify({ error: 'You cannot confirm your own submission' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (preCheck.player_a_id !== user.id && preCheck.player_b_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'You are not a participant in this match' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -151,6 +159,7 @@ serve(async (req) => {
         player_b_id,
         player_a_racks_won,
         player_a_racks_lost,
+        submitted_by,
         player_a:users!matches_player_a_id_fkey(id, rating, rd, vol),
         player_b:users!matches_player_b_id_fkey(id, rating, rd, vol)
       `)
@@ -167,8 +176,15 @@ serve(async (req) => {
     const playerA = Array.isArray(matchRow.player_a) ? matchRow.player_a[0] : matchRow.player_a
     const playerB = Array.isArray(matchRow.player_b) ? matchRow.player_b[0] : matchRow.player_b
 
-    const resolvedRacksWon = matchRow.player_a_racks_won ?? 0
-    const resolvedRacksLost = matchRow.player_a_racks_lost ?? 0
+    // player_a_racks_won/lost are stored from the SUBMITTER's perspective
+    // We need to map them to the actual player_a/player_b in the DB
+    const submittedByPlayerA = matchRow.submitted_by === matchRow.player_a_id
+    const submitterRacksWon = matchRow.player_a_racks_won ?? 0
+    const submitterRacksLost = matchRow.player_a_racks_lost ?? 0
+
+    // From player_a's perspective (DB player_a):
+    const resolvedRacksWon  = submittedByPlayerA ? submitterRacksWon  : submitterRacksLost
+    const resolvedRacksLost = submittedByPlayerA ? submitterRacksLost : submitterRacksWon
 
     const useMock = MATH_USE_MOCK === 'true' || (!MATH_SERVICE_URL && MATH_USE_MOCK !== 'false')
 
@@ -264,15 +280,15 @@ serve(async (req) => {
         event: 'RESULT_CONFIRMED',
         payload: {
           match_id,
-          player_a: { rating_before: playerA.rating, rating_after: resultA.new_rating, new_rd: resultA.new_rd },
-          player_b: { rating_before: playerB.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
+          player_a: { user_id: playerA.id, rating_before: playerA.rating, rating_after: resultA.new_rating, new_rd: resultA.new_rd },
+          player_b: { user_id: playerB.id, rating_before: playerB.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
         }
       })
 
     return new Response(JSON.stringify({
       status: 'success',
-      player_a: { rating_before: playerA.rating, rating_after: resultA.new_rating, new_rd: resultA.new_rd },
-      player_b: { rating_before: playerB.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
+      player_a: { user_id: playerA.id, rating_before: playerA.rating, rating_after: resultA.new_rating, new_rd: resultA.new_rd },
+      player_b: { user_id: playerB.id, rating_before: playerB.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
       // Legacy compat fields
       rating_before: playerA.rating,
       rating_after: resultA.new_rating,
