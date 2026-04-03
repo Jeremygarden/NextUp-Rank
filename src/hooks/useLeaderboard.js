@@ -6,7 +6,7 @@ import supabase from '../lib/supabaseClient';
 const getLeaderboardUrl = () => {
   const base =
     import.meta.env.VITE_SUPABASE_URL ??
-    (supabase as any).supabaseUrl ?? // fallback: read from supabase client
+    supabase.supabaseUrl ?? // fallback: read from supabase client
     'https://tesdzxnmffmaxylcpjia.supabase.co'; // last-resort fallback
   return `${base}/functions/v1/leaderboard`;
 };
