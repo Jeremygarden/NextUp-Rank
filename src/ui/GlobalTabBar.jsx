@@ -1,10 +1,11 @@
 import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Swords, User } from 'lucide-react'
+import { Home, Swords, LogIn, User } from 'lucide-react'
 
 const TABS = [
   { path: '/', label: '广场', icon: Home },
   { path: '/create-match', label: '发起对局', icon: Swords },
+  { path: '/join', label: '加入对局', icon: LogIn },
   { path: '/profile', label: '我的', icon: User },
 ]
 
