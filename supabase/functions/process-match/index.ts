@@ -84,7 +84,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Fix #5: atomic concurrency lock — only one invocation proceeds when status='locked'
+    // Atomic concurrency lock — only one invocation proceeds when status='locked'
     // If another concurrent call already flipped status to 'processing', this returns nothing
     const { data: lockRow, error: atomicLockError } = await supabase
       .from('matches')
@@ -109,41 +109,40 @@ serve(async (req) => {
       })
     }
 
-    // Fix #4: handle missing lock_and_get_match_data RPC gracefully
-    const { data: matchData, error: lockError } = await supabase
-      .rpc('lock_and_get_match_data', { mid: match_id })
+    // Directly query match data + player ratings (no RPC needed after atomic lock above)
+    const { data: matchRow, error: matchFetchError } = await supabase
+      .from('matches')
+      .select(`
+        player_a_id,
+        player_b_id,
+        racks_won,
+        racks_lost,
+        player_a:users!matches_player_a_id_fkey(id, rating, rd, vol),
+        player_b:users!matches_player_b_id_fkey(id, rating, rd, vol)
+      `)
+      .eq('id', match_id)
+      .maybeSingle()
 
-    if (lockError) {
-      // Check if the error is because the RPC doesn't exist (code PGRST202 / 42883)
-      const isRpcMissing = lockError.code === 'PGRST202' || lockError.code === '42883' ||
-        lockError.message?.includes('function') && lockError.message?.includes('does not exist')
-
-      if (isRpcMissing) {
-        return new Response(JSON.stringify({
-          error: 'RPC lock_and_get_match_data is not defined. Please run the required database migration.',
-          hint: 'supabase/migrations/*_add_lock_and_get_match_data.sql',
-        }), {
-          status: 501,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      return new Response(JSON.stringify({ error: `Lock RPC failed: ${lockError.message}` }), {
+    if (matchFetchError) {
+      return new Response(JSON.stringify({ error: `Failed to fetch match data: ${matchFetchError.message}` }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    if (!matchData) {
-      return new Response(JSON.stringify({ error: 'Match data not found or already processed' }), {
+    if (!matchRow) {
+      return new Response(JSON.stringify({ error: 'Match data not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    const playerA = Array.isArray(matchRow.player_a) ? matchRow.player_a[0] : matchRow.player_a
+    const playerB = Array.isArray(matchRow.player_b) ? matchRow.player_b[0] : matchRow.player_b
+
     // Resolve racks: prefer request-supplied values over DB values
-    const resolvedRacksWon = reqRacksWon ?? matchData.racks_won ?? 0
-    const resolvedRacksLost = reqRacksLost ?? matchData.racks_lost ?? 0
+    const resolvedRacksWon = reqRacksWon ?? matchRow.racks_won ?? 0
+    const resolvedRacksLost = reqRacksLost ?? matchRow.racks_lost ?? 0
 
     // Persist resolved racks back to matches table
     await supabase
@@ -152,13 +151,13 @@ serve(async (req) => {
       .eq('id', match_id)
 
     const params = {
-      rating: matchData.player_a.rating,
-      rd: matchData.player_a.rd,
-      vol: matchData.player_a.vol,
+      rating: playerA.rating,
+      rd: playerA.rd,
+      vol: playerA.vol,
       racks_won: resolvedRacksWon,
       racks_lost: resolvedRacksLost,
-      opp_rating: matchData.player_b.rating,
-      opp_rd: matchData.player_b.rd
+      opp_rating: playerB.rating,
+      opp_rd: playerB.rd
     }
 
     let new_rating: number, new_rd: number, new_vol: number
@@ -185,31 +184,31 @@ serve(async (req) => {
       ;({ new_rating, new_rd, new_vol } = mockCalculateRating(params))
     }
 
-    const rating_before = matchData.player_a.rating
+    const rating_before = playerA.rating
 
     const { error: updateError } = await supabase
       .rpc('atomic_update_user_rating', {
-        target_user_id: matchData.player_a.id,
+        target_user_id: playerA.id,
         new_rating,
         new_rd,
         new_vol,
         p_match_id: match_id,
-        p_rating_before: matchData.player_a.rating,
-        p_opponent_id: matchData.player_b.id,
-        p_opponent_rating: matchData.player_b.rating
+        p_rating_before: playerA.rating,
+        p_opponent_id: playerB.id,
+        p_opponent_rating: playerB.rating
       })
 
     if (updateError) throw new Error(`Atomic update failed: ${updateError.message}`)
 
     // Player B: racks swapped (B's wins = A's losses and vice versa)
     const paramsB = {
-      rating: matchData.player_b.rating,
-      rd: matchData.player_b.rd,
-      vol: matchData.player_b.vol,
+      rating: playerB.rating,
+      rd: playerB.rd,
+      vol: playerB.vol,
       racks_won: resolvedRacksLost,   // B wins = A losses
       racks_lost: resolvedRacksWon,   // B losses = A wins
-      opp_rating: matchData.player_a.rating,
-      opp_rd: matchData.player_a.rd
+      opp_rating: playerA.rating,
+      opp_rd: playerA.rd
     }
 
     let resultB: { new_rating: number, new_rd: number, new_vol: number }
@@ -221,22 +220,37 @@ serve(async (req) => {
 
     const { error: updateErrorB } = await supabase
       .rpc('atomic_update_user_rating', {
-        target_user_id: matchData.player_b.id,
+        target_user_id: playerB.id,
         new_rating: resultB.new_rating,
         new_rd: resultB.new_rd,
         new_vol: resultB.new_vol,
         p_match_id: match_id,
-        p_rating_before: matchData.player_b.rating,
-        p_opponent_id: matchData.player_a.id,
-        p_opponent_rating: matchData.player_a.rating
+        p_rating_before: playerB.rating,
+        p_opponent_id: playerA.id,
+        p_opponent_rating: playerA.rating
       })
 
     if (updateErrorB) throw new Error(`Atomic update (player_b) failed: ${updateErrorB.message}`)
 
+    // Mark match as completed
+    await supabase
+      .from('matches')
+      .update({ status: 'completed' })
+      .eq('id', match_id)
+
+    // Broadcast RESULT_CONFIRMED event so frontend PendingConfirmation component can react
+    await supabase
+      .channel('plaza_events')
+      .send({
+        type: 'broadcast',
+        event: 'RESULT_CONFIRMED',
+        payload: { match_id }
+      })
+
     return new Response(JSON.stringify({
       status: 'success',
       player_a: { rating_before, rating_after: new_rating, new_rd },
-      player_b: { rating_before: matchData.player_b.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
+      player_b: { rating_before: playerB.rating, rating_after: resultB.new_rating, new_rd: resultB.new_rd },
       // Legacy compat fields
       rating_before,
       rating_after: new_rating,
