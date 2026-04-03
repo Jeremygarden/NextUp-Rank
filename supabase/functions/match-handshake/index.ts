@@ -69,6 +69,20 @@ serve(async (req) => {
       throw new Error("Cannot join your own match");
     }
 
+    // Active match guard: player_b must not already be in an active match
+    const { data: activeMatch } = await supabaseAdmin
+      .from('matches')
+      .select('id, status')
+      .or(`player_a_id.eq.${player_b_id},player_b_id.eq.${player_b_id}`)
+      .in('status', ['locked', 'awaiting_confirmation', 'processing'])
+      .maybeSingle()
+
+    if (activeMatch) {
+      return new Response(JSON.stringify({
+        error: '你目前已在一场对局中，请先完成或退出当前对局'
+      }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // Auto-upsert player_b in users table
     const defaultNicknameB = user.email?.split("@")[0] ?? "玩家";
     await supabaseAdmin

@@ -68,6 +68,8 @@ const SmartInviteCard = ({
   inviteUrl = "https://nextup.rank/match/123",
   expiresInSeconds = 3600,
   inviteCode,
+  onAccept,
+  matchId,
 }) => {
   const [copied, setCopied] = useState(false);
   // Fix #7: expiresInSeconds <= 0 → immediately expired
@@ -159,7 +161,7 @@ const SmartInviteCard = ({
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {renderActions(currentStatus, handleCopy, copied)}
+          {renderActions(currentStatus, handleCopy, copied, onAccept, isExpired)}
         </div>
       </div>
     </motion.div>
@@ -176,7 +178,7 @@ const DetailItem = ({ icon, text }) => (
   </div>
 );
 
-const renderActions = (status, onCopy, copied) => {
+const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
   if (status === STATUS.JOINED) {
     return (
       <div className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-4 rounded-2xl font-bold text-center">
