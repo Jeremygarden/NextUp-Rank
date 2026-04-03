@@ -193,9 +193,6 @@ serve(async (req) => {
         new_rd,
         new_vol,
         p_match_id: match_id,
-        p_rating_before: playerA.rating,
-        p_opponent_id: playerB.id,
-        p_opponent_rating: playerB.rating
       })
 
     if (updateError) throw new Error(`Atomic update failed: ${updateError.message}`)
@@ -225,9 +222,6 @@ serve(async (req) => {
         new_rd: resultB.new_rd,
         new_vol: resultB.new_vol,
         p_match_id: match_id,
-        p_rating_before: playerB.rating,
-        p_opponent_id: playerA.id,
-        p_opponent_rating: playerA.rating
       })
 
     if (updateErrorB) throw new Error(`Atomic update (player_b) failed: ${updateErrorB.message}`)
