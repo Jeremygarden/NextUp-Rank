@@ -106,6 +106,10 @@ const usePlazaEvents = () => {
         const id = extractMatchId(payload);
         if (id) removeMatch(id);
       })
+      .on('broadcast', { event: 'MATCH_EXPIRED' }, ({ payload }) => {
+        const ids = payload?.expired_ids ?? [];
+        ids.forEach(id => removeMatch(id));
+      })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
           setError(new Error('Failed to subscribe to plaza_events'));

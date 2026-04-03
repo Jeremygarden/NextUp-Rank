@@ -156,6 +156,11 @@ const PlazaPane = ({ matches, loading }) => {
       {matches.map((match, idx) => {
         const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
         const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null
+        const EXPIRE_MS = 30 * 60 * 1000
+        const createdAt = match.created_at ? new Date(match.created_at).getTime() : null
+        const secondsLeft = createdAt
+          ? Math.max(0, Math.round((createdAt + EXPIRE_MS - Date.now()) / 1000))
+          : 1800
         return (
           <div key={match.id ?? idx}>
             {match.distanceMeters !== undefined && (
@@ -180,7 +185,7 @@ const PlazaPane = ({ matches, loading }) => {
                 </span>
               </div>
             )}
-            <SmartInviteCard {...match} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
+            <SmartInviteCard {...match} expiresInSeconds={secondsLeft} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
           </div>
         )
       })}
