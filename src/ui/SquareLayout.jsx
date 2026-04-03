@@ -158,8 +158,6 @@ const PlazaPane = ({ matches, loading }) => {
       })}
     </div>
   );
-    </div>
-  );
 };
 
 export default SquareLayout;
