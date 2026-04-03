@@ -12,15 +12,15 @@ function Counter({ label, value, onChange }) {
         <button
           onClick={() => onChange(Math.max(0, value - 1))}
           aria-label={`减少${label}`}
-          className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors"
+          className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors flex-shrink-0"
         >
           <Minus size={20} />
         </button>
-        <span className="text-5xl font-black font-mono w-16 text-center tabular-nums">{value}</span>
+        <span className="text-4xl font-black font-mono w-14 text-center tabular-nums">{value}</span>
         <button
           onClick={() => onChange(value + 1)}
           aria-label={`增加${label}`}
-          className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors"
+          className="w-12 h-12 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors flex-shrink-0"
         >
           <Plus size={20} />
         </button>
@@ -241,9 +241,9 @@ export default function SubmitResultPage() {
               </div>
 
               <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
-                <div className="flex justify-around">
+                <div className="flex flex-col items-center gap-2">
                   <Counter label="我赢的局数" value={racksWon} onChange={setRacksWon} />
-                  <div className="w-px bg-slate-700 self-stretch mx-2" />
+                  <div className="w-full h-px bg-slate-700 my-2" />
                   <Counter label="对手赢的局数" value={racksLost} onChange={setRacksLost} />
                 </div>
               </div>

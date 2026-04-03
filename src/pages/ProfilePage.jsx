@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2, ChevronLeft, Info, Pencil, Check, X } from 'lucide-react'
+import { Loader2, ChevronLeft, Info, Pencil, Check, X, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PerformancePulseGraph from '../ui/PerformancePulseGraph'
 import GlobalTabBar from '../ui/GlobalTabBar'
@@ -80,6 +80,11 @@ export default function ProfilePage() {
   }
 
   const initials = profile?.nickname ? profile.nickname.slice(0, 2).toUpperCase() : '?'
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
@@ -200,6 +205,15 @@ export default function ProfilePage() {
                 <PerformancePulseGraph data={graphData} />
               )}
             </div>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/60 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-2 mb-4"
+            >
+              <LogOut size={16} />
+              退出登录
+            </button>
           </motion.div>
         )}
       </div>

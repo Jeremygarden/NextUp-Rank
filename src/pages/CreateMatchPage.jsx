@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Check, Copy, MapPin, AlertTriangle, Wifi } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import GlobalTabBar from '../ui/GlobalTabBar'
+import LBSHandshakeAnimation from '../ui/LBSHandshakeAnimation'
 
 const GAME_TYPES = [
   { id: '8ball', label: '八球', emoji: '🎱' },
@@ -150,8 +151,8 @@ function LBSPreCheck({ selectedVenueId, venues, onPass, onBack }) {
 
 // Step 4: Realtime waiting component
 function RealtimeWaiting({ result, navigate }) {
-  const [handshakeState, setHandshakeState] = useState('waiting') // waiting | success
-  const [opponentName, setOpponentName] = useState(null)
+  const [handshakeState, setHandshakeState] = useState('waiting') // waiting | animating | done
+  const [handshakePayload, setHandshakePayload] = useState(null)
   const [codeCopied, setCodeCopied] = useState(false)
   const channelRef = useRef(null)
 
@@ -170,8 +171,8 @@ function RealtimeWaiting({ result, navigate }) {
       .channel('plaza_events')
       .on('broadcast', { event: 'HANDSHAKE_SUCCESS' }, ({ payload }) => {
         if (payload?.match_id === result.match_id) {
-          setOpponentName(payload?.opponent_name || null)
-          setHandshakeState('success')
+          setHandshakePayload(payload)
+          setHandshakeState('animating')
         }
       })
       .subscribe()
@@ -185,6 +186,24 @@ function RealtimeWaiting({ result, navigate }) {
       }
     }
   }, [result.match_id])
+
+  // Show handshake animation fullscreen when animating
+  if (handshakeState === 'animating' && handshakePayload) {
+    const playerA = handshakePayload.initiator
+      ? { nickname: handshakePayload.initiator.nickname, rating: handshakePayload.initiator.rating }
+      : { nickname: '我', rating: 1500 }
+    const playerB = {
+      nickname: handshakePayload.opponent_name || '对手',
+      rating: handshakePayload.opponent_rating || 1500,
+    }
+    return (
+      <LBSHandshakeAnimation
+        playerA={playerA}
+        playerB={playerB}
+        onComplete={() => navigate(`/submit/${handshakePayload.match_id}`)}
+      />
+    )
+  }
 
   return (
     <motion.div key="step4" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
@@ -210,18 +229,7 @@ function RealtimeWaiting({ result, navigate }) {
               <span>实时监听中</span>
             </div>
           </motion.div>
-        ) : (
-          <motion.div key="success-header" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-            <motion.div
-              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}
-              className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3"
-            >
-              <span className="text-3xl">🎯</span>
-            </motion.div>
-            <p className="text-green-400 font-bold text-xl mb-1">对手已加入！</p>
-            {opponentName && <p className="text-slate-400 text-sm">对手：{opponentName}</p>}
-          </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
 
       <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
@@ -254,20 +262,9 @@ function RealtimeWaiting({ result, navigate }) {
         />
       </div>
 
-      {handshakeState === 'success' ? (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={() => navigate(`/submit/${result.match_id}`)}
-          className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-2xl transition-colors text-lg mb-3"
-        >
-          🏆 开始比赛
-        </motion.button>
-      ) : (
-        <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
-          返回广场
-        </button>
-      )}
+      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+        返回广场
+      </button>
     </motion.div>
   )
 }
