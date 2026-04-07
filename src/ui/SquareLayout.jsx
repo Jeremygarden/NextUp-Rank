@@ -58,7 +58,7 @@ const SquareLayout = ({
           <button
             key={tab.key}
             onClick={() => switchTab(tab.key)}
-            className={`flex-1 py-4 text-base font-bold tracking-wide transition-colors relative ${
+            className={`flex-1 py-4 text-base font-bold tracking-wide transition-colors duration-200 relative ${
               activeTab === tab.key ? "text-white" : "text-slate-500 hover:text-slate-300"
             }`}
           >
