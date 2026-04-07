@@ -114,7 +114,7 @@ const SmartInviteCard = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-sm ${isExpired ? "grayscale contrast-75" : ""}`}
+      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl w-full ${isExpired ? "grayscale contrast-75" : ""}`}
     >
       {/* Header */}
       <div className={`p-4 ${gameStyle.color} border-b ${gameStyle.border} flex items-center justify-between`}>
