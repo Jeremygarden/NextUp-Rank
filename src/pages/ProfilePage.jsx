@@ -95,7 +95,7 @@ export default function ProfilePage() {
         <h1 className="text-lg font-bold">我的主页</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 pb-8">
+      <div className="flex-1 overflow-y-auto p-6 pb-24">
         {loading ? (
           <div className="animate-pulse space-y-6 pt-4">
             {/* Avatar + name skeleton */}
