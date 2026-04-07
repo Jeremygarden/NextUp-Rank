@@ -58,7 +58,7 @@ const SquareLayout = ({
           <button
             key={tab.key}
             onClick={() => switchTab(tab.key)}
-            className={`flex-1 py-4 text-base font-bold tracking-wide transition-colors relative ${
+            className={`flex-1 py-4 text-base font-bold tracking-wide transition-colors duration-200 relative ${
               activeTab === tab.key ? "text-white" : "text-slate-500 hover:text-slate-300"
             }`}
           >
@@ -74,7 +74,7 @@ const SquareLayout = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={activeTab}
@@ -152,7 +152,7 @@ const PlazaPane = ({ matches, loading }) => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 pb-6 space-y-4">
       {matches.map((match, idx) => {
         const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
         const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null

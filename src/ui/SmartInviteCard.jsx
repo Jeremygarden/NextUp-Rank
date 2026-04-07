@@ -13,15 +13,15 @@ const STATUS = {
 
 const ROLES = {
   Admin: { label: "管理员", bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400" },
-  Player: { label: "球手", bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-400" },
+  Player: { label: "球手", bg: "bg-indigo-500/10", border: "border-indigo-500/30", text: "text-indigo-400" },
   Spectator: { label: "观众", bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400" },
 };
 
 const GAME_TYPES = {
   "8ball": { label: "八球", color: "bg-slate-800", text: "text-slate-100", border: "border-slate-700" },
-  "9ball": { label: "九球", color: "bg-yellow-500/20", text: "text-yellow-500", border: "border-yellow-500/30" },
-  "10ball": { label: "十球", color: "bg-blue-500/20", text: "text-blue-500", border: "border-blue-500/30" },
-  "straight": { label: "直线球", color: "bg-red-500/20", text: "text-red-500", border: "border-red-500/30" },
+  "9ball": { label: "九球", color: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
+  "10ball": { label: "十球", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+  "straight": { label: "直线球", color: "bg-red-500/20", text: "text-red-400", border: "border-red-500/30" },
   "default": { label: "自定义", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
 };
 
@@ -114,7 +114,7 @@ const SmartInviteCard = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-sm ${isExpired ? "grayscale contrast-75" : ""}`}
+      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl w-full ${isExpired ? "grayscale contrast-75" : ""}`}
     >
       {/* Header */}
       <div className={`p-4 ${gameStyle.color} border-b ${gameStyle.border} flex items-center justify-between`}>
@@ -138,9 +138,9 @@ const SmartInviteCard = ({
 
       <div className="p-6">
         {/* Inviter Info */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className={`w-12 h-12 rounded-2xl ${isExpired ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg text-white`}>
-            {inviter[0]}
+        <div className="flex items-center gap-4 mb-5">
+          <div className={`w-12 h-12 rounded-2xl ${isExpired ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg text-white flex-shrink-0`}>
+            {typeof inviter === 'string' ? inviter[0]?.toUpperCase() : '?'}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -154,9 +154,11 @@ const SmartInviteCard = ({
         </div>
 
         {/* Details Section */}
-        <div className="space-y-3 mb-8">
+        <div className="space-y-3 mb-5">
           <DetailItem icon={<Clock className="w-4 h-4 text-indigo-400" />} text={startTime} />
-          <DetailItem icon={<Trophy className="w-4 h-4 text-emerald-400" />} text={`Entry: ${entryFee}`} />
+          {entryFee && entryFee !== "Free" && (
+            <DetailItem icon={<Trophy className="w-4 h-4 text-emerald-400" />} text={`报名费: ${entryFee}`} />
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -200,12 +202,12 @@ const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
       <button
         onClick={onAccept}
         disabled={!onAccept || isExpired}
-        className="flex-[2] bg-white hover:bg-slate-100 disabled:opacity-40 text-slate-900 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+        className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
       >
         接受 <ChevronRight className="w-4 h-4" />
       </button>
       <button 
-        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group" 
+        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group min-h-[44px]" 
         onClick={onCopy}
       >
         <div className="flex items-center justify-center gap-2">

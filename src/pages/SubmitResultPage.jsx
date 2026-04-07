@@ -73,7 +73,7 @@ function SettlementResult({ result, navigate }) {
   const delta = result ? (result.rating_after - result.rating_before) : 0
 
   useEffect(() => {
-    const timer = setTimeout(() => navigate('/'), 2000)
+    const timer = setTimeout(() => navigate('/'), 4000)
     return () => clearTimeout(timer)
   }, [navigate])
 
@@ -113,7 +113,7 @@ function SettlementResult({ result, navigate }) {
       <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
         返回广场
       </button>
-      <p className="text-slate-500 text-xs mt-3 text-center">2 秒后自动跳转...</p>
+      <p className="text-slate-500 text-xs mt-3 text-center">4 秒后自动跳转...</p>
     </motion.div>
   )
 }
@@ -322,6 +322,7 @@ export default function SubmitResultPage() {
   const [phase, setPhase] = useState(null)
   const [settlementResult, setSettlementResult] = useState(null)
 
+  const [hasInteracted, setHasInteracted] = useState(false)
   const [showAbandonModal, setShowAbandonModal] = useState(false)
   const [abandonLoading, setAbandonLoading] = useState(false)
 
@@ -530,9 +531,9 @@ export default function SubmitResultPage() {
                 </div>
                 <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
                   <div className="flex flex-col items-center gap-2">
-                    <Counter label="我赢的局数" value={racksWon} onChange={setRacksWon} />
+                    <Counter label="我赢的局数" value={racksWon} onChange={v => { setRacksWon(v); setHasInteracted(true) }} />
                     <div className="w-full h-px bg-slate-700 my-2" />
-                    <Counter label="对手赢的局数" value={racksLost} onChange={setRacksLost} />
+                    <Counter label="对手赢的局数" value={racksLost} onChange={v => { setRacksLost(v); setHasInteracted(true) }} />
                   </div>
                 </div>
 
@@ -542,7 +543,7 @@ export default function SubmitResultPage() {
                   </motion.div>
                 )}
 
-                {(racksWon === 0 && racksLost === 0) && (
+                {hasInteracted && (racksWon === 0 && racksLost === 0) && (
                   <p className="mb-4 text-slate-400 text-sm text-center">请至少输入一方的得分</p>
                 )}
 

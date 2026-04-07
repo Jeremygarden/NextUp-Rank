@@ -53,16 +53,15 @@ const PerformancePulseGraph = ({ data: propData }) => {
 
   return (
     <div className="w-full bg-slate-900 p-4 sm:p-6 pb-4 rounded-2xl shadow-2xl border border-slate-800">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="text-slate-100 font-bold text-lg">表现脉冲</h3>
-          <p className="text-slate-400 text-xs">基于 BG-1 加权算法（近25场）</p>
+          <p className="text-slate-400 text-xs">BG-1 加权 · 近 {data.length} 场</p>
         </div>
         <div className="text-right">
-          <span className="text-amber-400 font-mono text-2xl font-black">
+          <span className="text-indigo-400 font-mono text-xl font-black">
             {data[data.length - 1]?.rating ?? '--'}
           </span>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest">当前积分</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-widest">最新积分</p>
         </div>
       </div>
 

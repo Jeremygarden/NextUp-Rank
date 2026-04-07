@@ -85,11 +85,11 @@ export default function JoinMatchPage() {
             </div>
 
             {/* Alphanumeric code display boxes */}
-            <div className="flex gap-2 mb-6">
+            <div className="flex gap-1.5 mb-6">
               {[0,1,2,3,4,5].map(i => (
-                <div key={i} className={`w-12 h-14 flex items-center justify-center text-xl font-mono font-bold rounded-lg border-2 transition-colors
+                <div key={i} className={`w-10 h-12 flex items-center justify-center text-lg font-mono font-bold rounded-lg border-2 transition-colors
                   ${code[i] ? 'border-indigo-400 bg-indigo-500/10 text-indigo-200' : 'border-slate-700 bg-slate-900 text-slate-600'}`}>
-                  {code[i] || '—'}
+                  {code[i] || '·'}
                 </div>
               ))}
             </div>
