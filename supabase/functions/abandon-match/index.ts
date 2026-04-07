@@ -85,7 +85,11 @@ serve(async (req) => {
     // Atomic update — only succeeds if status is still abandonable
     const { error: updateError, count } = await supabaseAdmin
       .from("matches")
-      .update({ status: "abandoned" })
+      .update({
+        status: "abandoned",
+        abandoned_by: user.id,
+        abandoned_at: new Date().toISOString(),
+      })
       .eq("id", match_id)
       .in("status", abandonableStatuses)
       .select()
