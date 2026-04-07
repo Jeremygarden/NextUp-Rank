@@ -74,7 +74,7 @@ const SquareLayout = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto relative">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={activeTab}
@@ -152,7 +152,7 @@ const PlazaPane = ({ matches, loading }) => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 pb-6 space-y-4">
       {matches.map((match, idx) => {
         const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
         const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null
