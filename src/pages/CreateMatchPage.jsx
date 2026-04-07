@@ -340,7 +340,7 @@ export default function CreateMatchPage() {
         </div>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 pb-24 overflow-y-auto">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
