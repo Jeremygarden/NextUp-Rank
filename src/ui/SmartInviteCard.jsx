@@ -138,9 +138,9 @@ const SmartInviteCard = ({
 
       <div className="p-6">
         {/* Inviter Info */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className={`w-12 h-12 rounded-2xl ${isExpired ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg text-white`}>
-            {inviter[0]}
+        <div className="flex items-center gap-4 mb-5">
+          <div className={`w-12 h-12 rounded-2xl ${isExpired ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg text-white flex-shrink-0`}>
+            {typeof inviter === 'string' ? inviter[0]?.toUpperCase() : '?'}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ const SmartInviteCard = ({
         </div>
 
         {/* Details Section */}
-        <div className="space-y-3 mb-8">
+        <div className="space-y-3 mb-5">
           <DetailItem icon={<Clock className="w-4 h-4 text-indigo-400" />} text={startTime} />
           {entryFee && entryFee !== "Free" && (
             <DetailItem icon={<Trophy className="w-4 h-4 text-emerald-400" />} text={`报名费: ${entryFee}`} />
