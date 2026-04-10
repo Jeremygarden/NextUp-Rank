@@ -38,15 +38,20 @@ function LBSPreCheck({ selectedVenueId, venues, onPass, onBack }) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords
-        // TODO: 从 venues 表读取对应球房的真实坐标
-        // 当前使用占位坐标，实际需要从 venues 表查询 lat/lng 字段
-        const VENUE_PLACEHOLDER_LAT = 31.2304
-        const VENUE_PLACEHOLDER_LNG = 121.4737
-        const dist = Math.round(calcDistance(latitude, longitude, VENUE_PLACEHOLDER_LAT, VENUE_PLACEHOLDER_LNG))
+        // Check if selected venue has real lat/lng coords
+        const venue = venues?.find(v => v.id === selectedVenueId)
+        const venueLat = venue?.lat
+        const venueLng = venue?.lng
+        if (!venueLat || !venueLng) {
+          // No real venue coords available — skip LBS verification
+          setLocState('skipped')
+          setTimeout(onPass, 1500)
+          return
+        }
+        const dist = Math.round(calcDistance(latitude, longitude, venueLat, venueLng))
         setDistance(dist)
         if (dist < 100) {
           setLocState('near')
-          // Auto-advance after brief delay
           setTimeout(onPass, 1200)
         } else {
           setLocState('far')
@@ -141,6 +146,16 @@ function LBSPreCheck({ selectedVenueId, venues, onPass, onBack }) {
               >
                 继续
               </button>
+            </motion.div>
+          )}
+
+          {locState === 'skipped' && (
+            <motion.div key="skipped" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <AlertTriangle className="text-amber-400" size={28} />
+              </div>
+              <p className="text-amber-400 font-medium text-sm">无法验证位置，已自动跳过</p>
+              <Loader2 className="animate-spin text-slate-500" size={18} />
             </motion.div>
           )}
         </AnimatePresence>

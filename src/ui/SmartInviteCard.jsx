@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
  * Constants & Helpers
  */
 const STATUS = {
-  PENDING: "Pending",
-  JOINED: "Joined",
-  EXPIRED: "Expired",
+  PENDING: "pending",
+  JOINED: "joined",
+  EXPIRED: "expired",
 };
 
 const ROLES = {
@@ -58,10 +58,10 @@ const CountdownBadge = ({ seconds }) => {
  * Main Component
  */
 const SmartInviteCard = ({
-  inviter = "Alex",
+  inviter = "玩家",
   gameType = "8ball",
-  location = "Golden Break Club",
-  startTime = "Tonight 20:00",
+  location = "球馆",
+  startTime = "今晚 20:00",
   entryFee = "Free",
   status: initialStatus = STATUS.PENDING,
   role = "Player",
