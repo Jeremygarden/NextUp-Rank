@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2, ChevronLeft, Info, Pencil, Check, X, LogOut } from 'lucide-react'
+import { Loader2, ChevronLeft, Info, Pencil, Check, X, LogOut, Camera } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PerformancePulseGraph from '../ui/PerformancePulseGraph'
 import GlobalTabBar from '../ui/GlobalTabBar'
@@ -17,6 +17,9 @@ export default function ProfilePage() {
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameLoading, setNicknameLoading] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarMessage, setAvatarMessage] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchProfile()
@@ -30,16 +33,14 @@ export default function ProfilePage() {
       const userId = session?.user?.id
       if (!userId) throw new Error('未登录')
 
-      // users row is created automatically via on_auth_user_created trigger on signup
-      // just select here; fall back to defaults if row not yet present
       const { data: profile, error: userErr } = await supabase
         .from('users')
-        .select('nickname, rating, rd')
+        .select('nickname, rating, rd, avatar_url')
         .eq('id', userId)
         .maybeSingle()
 
       if (userErr) throw userErr
-      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '玩家', rating: 1500, rd: 200 })
+      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '玩家', rating: 1500, rd: 200, avatar_url: null })
 
       const { data: snaps, error: snapErr } = await supabase
         .from('rating_snapshots')
@@ -79,6 +80,41 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarMessage('图片不能超过 2MB')
+      return
+    }
+    setAvatarUploading(true)
+    setAvatarMessage(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+      const ext = file.name.split('.').pop()
+      const path = `${userId}/avatar.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (uploadErr) {
+        if (uploadErr.message?.includes('Bucket not found') || uploadErr.statusCode === 404 || uploadErr.error === 'Bucket not found') {
+          setAvatarMessage('头像上传功能暂未开放')
+          return
+        }
+        throw uploadErr
+      }
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+      const avatarUrl = urlData?.publicUrl
+      await supabase.from('users').upsert({ id: userId, avatar_url: avatarUrl })
+      setProfile(p => ({ ...p, avatar_url: avatarUrl }))
+      setAvatarMessage(null)
+    } catch (e) {
+      setAvatarMessage('头像上传功能暂未开放')
+      console.error('Avatar upload failed', e)
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   const initials = profile?.nickname ? profile.nickname.slice(0, 2).toUpperCase() : '?'
 
   async function handleLogout() {
@@ -98,7 +134,6 @@ export default function ProfilePage() {
       <div className="flex-1 overflow-y-auto p-6 pb-24">
         {loading ? (
           <div className="animate-pulse space-y-6 pt-4">
-            {/* Avatar + name skeleton */}
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-full bg-slate-800" />
               <div className="space-y-2 flex-1">
@@ -106,12 +141,10 @@ export default function ProfilePage() {
                 <div className="h-4 w-20 bg-slate-800 rounded-lg" />
               </div>
             </div>
-            {/* Rating skeleton */}
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-center space-y-3">
               <div className="h-4 w-20 bg-slate-800 rounded mx-auto" />
               <div className="h-16 w-32 bg-slate-800 rounded-xl mx-auto" />
             </div>
-            {/* Graph skeleton */}
             <div className="space-y-2">
               <div className="h-4 w-24 bg-slate-800 rounded" />
               <div className="h-32 bg-slate-900 border border-slate-800 rounded-2xl" />
@@ -126,8 +159,34 @@ export default function ProfilePage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             {/* Avatar + Info */}
             <div className="flex items-center gap-5 mb-8">
-              <div className="w-20 h-20 rounded-full bg-indigo-600/30 border-2 border-indigo-500 flex items-center justify-center text-3xl font-black text-indigo-300">
-                {initials}
+              <div className="relative group">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="上传头像"
+                  className="w-20 h-20 rounded-full bg-indigo-600/30 border-2 border-indigo-500 flex items-center justify-center text-3xl font-black text-indigo-300 overflow-hidden relative"
+                  disabled={avatarUploading}
+                >
+                  {avatarUploading ? (
+                    <Loader2 className="animate-spin text-indigo-400" size={28} />
+                  ) : profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="头像" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                    <Camera size={20} className="text-white" />
+                  </div>
+                </button>
+                {avatarMessage && (
+                  <p className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-amber-400">{avatarMessage}</p>
+                )}
               </div>
               <div>
                 {editingNickname ? (
@@ -192,6 +251,9 @@ export default function ProfilePage() {
                   </div>
                 )
               })()}
+              {profile.rating === 1500 && snapshots.length === 0 && (
+                <p className="text-slate-500 text-xs mt-2">初始积分，打完首场后会变化</p>
+              )}
             </div>
 
             {/* Graph */}
@@ -199,7 +261,8 @@ export default function ProfilePage() {
               <h3 className="text-base font-semibold mb-3 text-slate-300">积分历史</h3>
               {snapshots.length === 0 ? (
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center text-slate-400">
-                  暂无比赛记录，积分历史将在首场对局后显示
+                  <p>暂无比赛记录，积分历史将在首场对局后显示</p>
+                  <button onClick={() => navigate('/create-match')} className="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-2xl transition-colors">去发起对局 →</button>
                 </div>
               ) : (
                 <PerformancePulseGraph data={graphData} />
