@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
+import ShareCardButton from '../ui/ShareCardButton'
 
 function AbandonModal({ onConfirm, onCancel, loading }) {
   return (
@@ -69,11 +70,12 @@ function Counter({ label, value, onChange }) {
 }
 
 // Settlement result display (both players)
-function SettlementResult({ result, navigate }) {
+function SettlementResult({ result, navigate, myNickname, opponentNickname, racksWon, racksLost }) {
   const delta = result ? (result.rating_after - result.rating_before) : 0
+  const isWin = racksWon > racksLost
 
   useEffect(() => {
-    const timer = setTimeout(() => navigate('/'), 4000)
+    const timer = setTimeout(() => navigate('/'), 8000)
     return () => clearTimeout(timer)
   }, [navigate])
 
@@ -110,10 +112,19 @@ function SettlementResult({ result, navigate }) {
           </motion.span>
         </div>
       </div>
-      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+      <ShareCardButton
+        myNickname={myNickname || '我'}
+        opponentNickname={opponentNickname || '对手'}
+        ratingBefore={result.rating_before}
+        ratingAfter={result.rating_after}
+        racksWon={racksWon ?? 0}
+        racksLost={racksLost ?? 0}
+        isWin={isWin}
+      />
+      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors mt-3">
         返回广场
       </button>
-      <p className="text-slate-500 text-xs mt-3 text-center">4 秒后自动跳转...</p>
+      <p className="text-slate-500 text-xs mt-3 text-center">8 秒后自动跳转...</p>
     </motion.div>
   )
 }
@@ -301,6 +312,8 @@ export default function SubmitResultPage() {
 
   const [matchInfo, setMatchInfo] = useState(null)
   const [myRatingBefore, setMyRatingBefore] = useState(null)
+  const [myNickname, setMyNickname] = useState('')
+  const [opponentNickname, setOpponentNickname] = useState('')
   const [initLoading, setInitLoading] = useState(true)
   const [initError, setInitError] = useState(null)
   const [opponentAbandoned, setOpponentAbandoned] = useState(false)
@@ -375,7 +388,7 @@ export default function SubmitResultPage() {
   const fetchMatch = useCallback(async () => {
     return supabase
       .from('matches')
-      .select('player_a_id, player_b_id, status, submitted_by, player_a_racks_won, player_a_racks_lost')
+      .select('player_a_id, player_b_id, status, submitted_by, player_a_racks_won, player_a_racks_lost, player_a:player_a_id(nickname), player_b:player_b_id(nickname)')
       .eq('id', matchId)
       .single()
   }, [matchId])
@@ -390,6 +403,13 @@ export default function SubmitResultPage() {
         if (error) throw new Error(error.message)
 
         setMatchInfo(match)
+
+        // Extract nicknames
+        const isPlayerA = match.player_a_id === userId
+        const myNick = isPlayerA ? match.player_a?.nickname : match.player_b?.nickname
+        const oppNick = isPlayerA ? match.player_b?.nickname : match.player_a?.nickname
+        setMyNickname(myNick || '')
+        setOpponentNickname(oppNick || '')
 
         // Get current rating for delta display later
         const { data: userRow } = await supabase.from('users').select('rating').eq('id', userId).single()
@@ -592,6 +612,10 @@ export default function SubmitResultPage() {
                 key="settled"
                 result={settlementResult}
                 navigate={navigate}
+                myNickname={myNickname}
+                opponentNickname={opponentNickname}
+                racksWon={racksWon}
+                racksLost={racksLost}
               />
             )}
 
