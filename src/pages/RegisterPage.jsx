@@ -35,7 +35,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">创建账号</h1>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-black tracking-tight mb-1">
+            <span className="text-white">NextUp-</span><span className="text-indigo-400">Rank</span>
+          </h1>
+          <p className="text-slate-500 text-xs tracking-wide">创建账号</p>
+        </div>
         {success ? (
           <p className="text-green-400 text-center">请查收邮件，确认注册</p>
         ) : (
@@ -76,7 +81,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50 shadow-lg shadow-indigo-500/30"
             >
               {loading ? '创建中...' : '创建账号'}
             </button>

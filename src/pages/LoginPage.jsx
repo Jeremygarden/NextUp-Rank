@@ -33,7 +33,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">NextUp-Rank</h1>
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-black tracking-tight mb-1">
+            <span className="text-white">NextUp-</span><span className="text-indigo-400">Rank</span>
+          </h1>
+          <p className="text-slate-500 text-xs tracking-wide">台球实时积分系统</p>
+        </div>
         <form onSubmit={handleSignIn} className="flex flex-col gap-4">
           <input
             type="email"
@@ -55,7 +60,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50 shadow-lg shadow-indigo-500/30"
           >
             {loading ? '登录中...' : '登录'}
           </button>

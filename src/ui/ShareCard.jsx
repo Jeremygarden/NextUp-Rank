@@ -49,7 +49,7 @@ export default function ShareCard({ myNickname, opponentNickname, ratingBefore, 
 
       {/* Top header */}
       <div style={{ padding: '28px 28px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Match Result</span>
+        <span style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>对局战报</span>
         <span style={{ fontSize: '11px', color: '#475569' }}>{today}</span>
       </div>
 
