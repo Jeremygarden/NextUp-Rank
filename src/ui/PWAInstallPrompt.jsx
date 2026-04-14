@@ -29,9 +29,14 @@ export default function PWAInstallPrompt() {
   const handleInstall = async () => {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
-    await deferredPrompt.userChoice
+    const { outcome } = await deferredPrompt.userChoice
+    // Write dismiss cooldown whether accepted or dismissed — either way don't show again soon
+    localStorage.setItem(DISMISS_KEY, Date.now())
     setDeferredPrompt(null)
     setVisible(false)
+    if (outcome === 'accepted') {
+      console.log('[PWA] Install accepted')
+    }
   }
 
   const handleDismiss = () => {

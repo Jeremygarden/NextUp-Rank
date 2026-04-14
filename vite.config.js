@@ -40,6 +40,9 @@ export default defineConfig({
       },
       workbox: {
         offlineGoogleAnalytics: false,
+        // Serve offline.html for navigation requests that fail offline
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/rest\//, /^\/auth\//, /^\/functions\//],
         // Cache static assets aggressively; network-first for API calls
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
