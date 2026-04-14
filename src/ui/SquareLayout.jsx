@@ -1,11 +1,44 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import SmartInviteCard from "./SmartInviteCard";
 import VenueLeaderboard from "./VenueLeaderboard";
 import { getRankInfo } from "../lib/rankColor";
 import { supabase } from "../lib/supabaseClient";
+
+function CancelMatchButton({ matchId }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleCancel() {
+    if (!matchId) return
+    setLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      await fetch('https://tesdzxnmffmaxylcpjia.supabase.co/functions/v1/abandon-match', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ match_id: matchId }),
+      })
+    } catch (e) {
+      console.error('Cancel match failed:', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCancel}
+      disabled={loading}
+      className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-40 transition-colors px-2 py-0.5 rounded-full border border-red-800/40 hover:bg-red-500/10"
+    >
+      {loading ? <Loader2 size={10} className="animate-spin" /> : <X size={10} />}
+      取消球局
+    </button>
+  )
+}
 
 /**
  * NextUp-Rank: SquareLayout
@@ -156,7 +189,7 @@ const PlazaPane = ({ matches, loading }) => {
       {matches.map((match, idx) => {
         const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
         const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null
-        const EXPIRE_MS = 30 * 60 * 1000
+        const EXPIRE_MS = 15 * 60 * 1000
         const createdAt = match.created_at ? new Date(match.created_at).getTime() : null
         const secondsLeft = createdAt
           ? Math.max(0, Math.round((createdAt + EXPIRE_MS - Date.now()) / 1000))
@@ -179,10 +212,11 @@ const PlazaPane = ({ matches, loading }) => {
               </div>
             )}
             {match.isOwn && (
-              <div className="flex items-center gap-1.5 mb-1 pl-1">
+              <div className="flex items-center justify-between mb-1 pl-1 pr-1">
                 <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
                   ✦ 我发起
                 </span>
+                <CancelMatchButton matchId={match.id ?? match.match_id} />
               </div>
             )}
             <SmartInviteCard {...match} expiresInSeconds={secondsLeft} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
