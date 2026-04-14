@@ -11,12 +11,16 @@ import CreateMatchPage from './pages/CreateMatchPage'
 import JoinMatchPage from './pages/JoinMatchPage'
 import SubmitResultPage from './pages/SubmitResultPage'
 import ProfilePage from './pages/ProfilePage'
+import OfflineToast from './ui/OfflineToast'
+import PWAInstallPrompt from './ui/PWAInstallPrompt'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <OfflineToast />
+        <PWAInstallPrompt />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
