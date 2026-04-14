@@ -38,6 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        offlineGoogleAnalytics: false,
         // Cache static assets aggressively; network-first for API calls
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
