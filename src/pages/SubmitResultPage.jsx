@@ -297,7 +297,7 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, subm
       if (!res.ok) {
         const msg = json.error || '确认失败'
         // Submitter accidentally tapped confirm — gracefully return to pending phase
-        if (res.status === 409 && msg.toLowerCase().includes('cannot confirm your own submission')) {
+        if (msg.toLowerCase().includes('cannot confirm your own submission')) {
           onBackToPending?.()
           return
         }
