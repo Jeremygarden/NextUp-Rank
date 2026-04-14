@@ -4,12 +4,14 @@ import { motion } from 'framer-motion'
 import { Loader2, ChevronLeft, Info, Pencil, Check, X, LogOut, Camera } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import PerformancePulseGraph from '../ui/PerformancePulseGraph'
+import RecentMatchList from '../ui/RecentMatchList'
 import GlobalTabBar from '../ui/GlobalTabBar'
 import { getRankInfo } from '../lib/rankColor'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
+  const [userId, setUserId] = useState(null)
   const [snapshots, setSnapshots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -32,6 +34,7 @@ export default function ProfilePage() {
       const { data: { session } } = await supabase.auth.getSession()
       const userId = session?.user?.id
       if (!userId) throw new Error('未登录')
+      setUserId(userId)
 
       const { data: profile, error: userErr } = await supabase
         .from('users')
@@ -267,6 +270,12 @@ export default function ProfilePage() {
               ) : (
                 <PerformancePulseGraph data={graphData} />
               )}
+            </div>
+
+            {/* 7-Day Match History */}
+            <div className="mb-6">
+              <h3 className="text-base font-semibold mb-3 text-slate-300">最近 7 天</h3>
+              <RecentMatchList userId={userId} />
             </div>
 
             {/* Logout */}
