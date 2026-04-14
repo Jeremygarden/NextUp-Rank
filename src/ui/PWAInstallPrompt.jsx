@@ -4,11 +4,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 const DISMISS_KEY = 'pwa-install-dismissed'
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
 
+function isAndroid() {
+  return /android/i.test(navigator.userAgent)
+}
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    // Only show on Android — iOS uses its own "Share → Add to Home Screen" flow
+    // Windows/macOS desktop should not show this mobile-style bottom sheet
+    if (!isAndroid()) return
+
     // Don't show if already running as standalone (installed)
     if (window.matchMedia('(display-mode: standalone)').matches) return
 
@@ -30,7 +38,6 @@ export default function PWAInstallPrompt() {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
-    // Write dismiss cooldown whether accepted or dismissed — either way don't show again soon
     localStorage.setItem(DISMISS_KEY, Date.now())
     setDeferredPrompt(null)
     setVisible(false)
@@ -68,9 +75,9 @@ export default function PWAInstallPrompt() {
             </button>
             <button
               onClick={handleInstall}
-              className="px-4 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+              className="px-4 py-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
             >
-              立即安装
+              立即添加
             </button>
           </div>
         </motion.div>
