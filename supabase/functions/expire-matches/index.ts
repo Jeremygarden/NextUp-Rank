@@ -18,12 +18,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Expire pending matches older than 30 minutes
+    // Expire pending matches older than 15 minutes
     const { data: expired, error } = await supabase
       .from('matches')
       .update({ status: 'expired' })
       .eq('status', 'pending')
-      .lt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
+      .lt('created_at', new Date(Date.now() - 15 * 60 * 1000).toISOString())
       .select('id')
 
     if (error) throw error

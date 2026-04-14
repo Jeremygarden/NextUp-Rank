@@ -79,7 +79,7 @@ const usePlazaEvents = () => {
         created_at: row.created_at,
         invite_code: row.match_metadata?.invite_code,
         game_type: row.match_metadata?.game_type,
-        player_name: row.player_a?.nickname ?? '玩家',
+        inviter: row.player_a?.nickname ?? '未知玩家',
         rating: row.player_a?.rating ?? null,
         venue_name: null,
         isOwn: row.player_a_id === currentUserId,
