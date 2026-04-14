@@ -330,12 +330,12 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, subm
         <div className="flex flex-col items-center gap-4">
           <div className="w-full flex justify-between items-center px-2">
             <span className="text-slate-300 text-sm">对手赢</span>
-            <span className="text-3xl font-black font-mono text-red-400">{racksWonBySubmitter} 局</span>
+            <span className="text-3xl font-black font-mono text-red-400">{racksLostBySubmitter} 局</span>
           </div>
           <div className="w-full h-px bg-slate-700" />
           <div className="w-full flex justify-between items-center px-2">
             <span className="text-slate-300 text-sm">你赢</span>
-            <span className="text-3xl font-black font-mono text-green-400">{racksLostBySubmitter} 局</span>
+            <span className="text-3xl font-black font-mono text-green-400">{racksWonBySubmitter} 局</span>
           </div>
         </div>
       </div>
