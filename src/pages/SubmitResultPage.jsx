@@ -222,7 +222,7 @@ function PendingConfirmation({ matchId, navigate, onConfirmed, myRatingBefore })
 }
 
 // Confirmer: show submitted score and confirm
-function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, navigate, onConfirmed, onBackToPending }) {
+function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, submitterNickname, navigate, onConfirmed, onBackToPending }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const pollRef = useRef(null)
@@ -326,7 +326,7 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, navi
         </p>
       </div>
       <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
-        <p className="text-slate-400 text-sm text-center mb-5">对手提交的比分</p>
+        <p className="text-slate-400 text-sm text-center mb-5">{submitterNickname ? `${submitterNickname} 提交的比分` : '对手提交的比分'}</p>
         <div className="flex flex-col items-center gap-4">
           <div className="w-full flex justify-between items-center px-2">
             <span className="text-slate-300 text-sm">对手赢</span>
@@ -659,6 +659,7 @@ export default function SubmitResultPage() {
                 matchId={matchId}
                 racksWonBySubmitter={matchInfo.player_a_racks_won ?? 0}
                 racksLostBySubmitter={matchInfo.player_a_racks_lost ?? 0}
+                submitterNickname={opponentNickname}
                 navigate={navigate}
                 onConfirmed={(result) => {
                   // Confirmer (Player B) perspective: submitter's racks_won = 对手赢, racks_lost = 你赢
