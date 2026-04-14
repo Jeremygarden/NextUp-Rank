@@ -32,25 +32,30 @@ export default function ProfilePage() {
     setError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const userId = session?.user?.id
-      if (!userId) throw new Error('未登录')
-      setUserId(userId)
+      const uid = session?.user?.id
+      if (!uid) throw new Error('未登录')
+      setUserId(uid)
 
-      const { data: profile, error: userErr } = await supabase
-        .from('users')
-        .select('nickname, rating, rd, avatar_url')
-        .eq('id', userId)
-        .maybeSingle()
+      // Parallel fetch: users + rating_snapshots simultaneously
+      const [
+        { data: profileData, error: userErr },
+        { data: snaps, error: snapErr },
+      ] = await Promise.all([
+        supabase
+          .from('users')
+          .select('nickname, rating, rd, avatar_url')
+          .eq('id', uid)
+          .maybeSingle(),
+        supabase
+          .from('rating_snapshots')
+          .select('rating_before, rating_after, rd_after, created_at, match_id')
+          .eq('user_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(25),
+      ])
 
       if (userErr) throw userErr
-      setProfile(profile || { nickname: session.user.email?.split('@')[0] || '玩家', rating: 1500, rd: 200, avatar_url: null })
-
-      const { data: snaps, error: snapErr } = await supabase
-        .from('rating_snapshots')
-        .select('rating_before, rating_after, rd_after, created_at, match_id')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(25)
+      setProfile(profileData || { nickname: session.user.email?.split('@')[0] || '玩家', rating: 1500, rd: 200, avatar_url: null })
       if (!snapErr) setSnapshots((snaps || []).reverse())
     } catch (e) {
       setError(e.message)
