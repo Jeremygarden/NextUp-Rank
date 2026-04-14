@@ -151,6 +151,7 @@ export default function GlobalTabBar() {
                 className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors min-h-[56px] active:opacity-70"
               >
                 <Icon
+                  aria-hidden="true"
                   size={22}
                   className={active ? 'text-indigo-400' : 'text-slate-500'}
                 />
@@ -160,7 +161,7 @@ export default function GlobalTabBar() {
                   {label}
                 </span>
                 {active && (
-                  <span className="w-1 h-1 rounded-full bg-indigo-400 mt-0.5" />
+                  <span className="w-6 h-0.5 rounded-full bg-indigo-400 mt-0.5" />
                 )}
               </button>
             )
