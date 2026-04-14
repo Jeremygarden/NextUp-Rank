@@ -2,9 +2,23 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
+const PHONE_DOMAIN = 'nextup-rank.phone'
+
+function toFakeEmail(phone) {
+  // Normalize: strip spaces/dashes, ensure +86 prefix for mainland
+  const digits = phone.replace(/[\s\-]/g, '')
+  const normalized = digits.startsWith('+') ? digits : `+86${digits}`
+  return `${normalized}@${PHONE_DOMAIN}`
+}
+
+function isPhoneInput(value) {
+  // Treat as phone if it's all digits (possibly with leading +/spaces)
+  return /^[+\d\s\-]{7,15}$/.test(value.trim())
+}
+
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [account, setAccount] = useState('') // phone or email
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -13,12 +27,17 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+    const emailToUse = isPhoneInput(account)
+      ? toFakeEmail(account)
+      : account
+
+    const { error } = await supabase.auth.signInWithPassword({ email: emailToUse, password })
     setLoading(false)
     if (error) {
       const msg = error.message?.toLowerCase() || ''
       const friendly = msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('email not confirmed')
-        ? '邮箱或密码错误，请重新输入'
+        ? '手机号/邮箱或密码错误，请重新输入'
         : msg.includes('too many requests') || msg.includes('rate limit')
         ? '请求过于频繁，请稍后再试'
         : msg.includes('user not found') || msg.includes('no user')
@@ -40,22 +59,31 @@ export default function LoginPage() {
           <p className="text-slate-500 text-xs tracking-wide">台球实时积分系统</p>
         </div>
         <form onSubmit={handleSignIn} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="邮箱"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <input
-            type="password"
-            placeholder="密码"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          <div className="flex flex-col gap-1">
+            <label htmlFor="account" className="text-slate-400 text-xs font-medium">手机号或邮箱</label>
+            <input
+              id="account"
+              type="text"
+              inputMode="tel"
+              placeholder="138 0000 0000"
+              value={account}
+              onChange={e => setAccount(e.target.value)}
+              required
+              className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-slate-400 text-xs font-medium">密码</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="请输入密码"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
