@@ -661,6 +661,10 @@ export default function SubmitResultPage() {
                 racksLostBySubmitter={matchInfo.player_a_racks_lost ?? 0}
                 navigate={navigate}
                 onConfirmed={(result) => {
+                  // Confirmer (Player B) perspective: submitter's racks_won = 对手赢, racks_lost = 你赢
+                  // So we flip: my score = player_a_racks_lost, opponent score = player_a_racks_won
+                  setRacksWon(matchInfo.player_a_racks_lost ?? 0)
+                  setRacksLost(matchInfo.player_a_racks_won ?? 0)
                   setSettlementResult(result)
                   setPhase('settled')
                 }}
