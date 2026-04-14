@@ -235,47 +235,50 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Rating */}
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-6 text-center">
-              <p className="text-slate-400 text-sm mb-2">当前积分</p>
+            {/* Rating — compact */}
+            <div className="bg-slate-900 border border-slate-700 rounded-3xl px-6 py-4 mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-slate-400 text-xs mb-0.5">当前积分</p>
+                {(() => {
+                  const rank = getRankInfo(profile.rating)
+                  return (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold"
+                        style={{ backgroundColor: rank.color + '33', color: rank.color, border: `1px solid ${rank.color}66` }}>
+                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
+                        {rank.label}
+                      </div>
+                    </div>
+                  )
+                })()}
+                {profile.rating === 1500 && snapshots.length === 0 && (
+                  <p className="text-slate-500 text-xs mt-1">初始积分，打完首场后会变化</p>
+                )}
+              </div>
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}
-                className="text-6xl font-black font-mono text-indigo-400"
+                className="text-4xl font-black font-mono text-indigo-400"
               >
                 {Math.round(profile.rating)}
               </motion.div>
-              {(() => {
-                const rank = getRankInfo(profile.rating)
-                return (
-                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold"
-                    style={{ backgroundColor: rank.color + '33', color: rank.color, border: `1px solid ${rank.color}66` }}>
-                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
-                    {rank.label}
-                  </div>
-                )
-              })()}
-              {profile.rating === 1500 && snapshots.length === 0 && (
-                <p className="text-slate-500 text-xs mt-2">初始积分，打完首场后会变化</p>
-              )}
+            </div>
+
+            {/* 7-Day Match History — above graph */}
+            <div className="mb-6">
+              <h3 className="text-base font-semibold mb-3 text-slate-300">最近 7 天</h3>
+              <RecentMatchList userId={userId} />
             </div>
 
             {/* Graph */}
             <div className="mb-6">
               <h3 className="text-base font-semibold mb-3 text-slate-300">积分历史</h3>
               {snapshots.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center text-slate-400">
-                  <p>暂无比赛记录，积分历史将在首场对局后显示</p>
-                  <button onClick={() => navigate('/create-match')} className="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-2xl transition-colors">去发起对局 →</button>
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+                  <p className="text-sm">暂无比赛记录，积分历史将在首场对局后显示</p>
                 </div>
               ) : (
                 <PerformancePulseGraph data={graphData} />
               )}
-            </div>
-
-            {/* 7-Day Match History */}
-            <div className="mb-6">
-              <h3 className="text-base font-semibold mb-3 text-slate-300">最近 7 天</h3>
-              <RecentMatchList userId={userId} />
             </div>
 
             {/* Logout */}
