@@ -41,11 +41,13 @@ function EmptyState() {
 function MatchRow({ match }) {
   const { isWin, isDraw, opponentNickname, opponentRating, myScore, oppScore, ratingDelta, ratingAfter, createdAt } = match
 
-  const deltaSign = ratingDelta > 0 ? '+' : ''
+  const deltaAbs = Math.abs(Math.round(ratingDelta))
   const deltaColor = isDraw ? 'text-slate-400' : isWin ? 'text-green-400' : 'text-red-400'
   const resultColor = isDraw ? 'text-slate-400' : isWin ? 'text-green-400' : 'text-red-400'
   const resultEmoji = isDraw ? '🤝' : isWin ? '🏆' : '😤'
   const resultLabel = isDraw ? '平' : isWin ? '胜' : '负'
+  // Arrow indicator: ↑ for win/gain, ↓ for loss
+  const arrow = isDraw ? '' : isWin ? '↑' : '↓'
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
@@ -55,7 +57,7 @@ function MatchRow({ match }) {
         <span className={`text-xs font-bold mt-0.5 ${resultColor}`}>{resultLabel}</span>
       </div>
 
-      {/* Middle: opponent + score */}
+      {/* Middle: opponent + score (me : opponent) */}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-300 truncate">
           vs <span className="font-medium text-slate-100">{opponentNickname}</span>
@@ -68,11 +70,11 @@ function MatchRow({ match }) {
         </p>
       </div>
 
-      {/* Right: date + rating delta */}
+      {/* Right: date + rating change with arrow */}
       <div className="flex flex-col items-end shrink-0">
         <p className="text-xs text-slate-500">{formatDate(createdAt)}</p>
         <p className={`text-sm font-mono font-bold ${deltaColor}`}>
-          {deltaSign}{Math.round(ratingDelta)} → {Math.round(ratingAfter)}
+          {arrow}{deltaAbs > 0 ? deltaAbs : ''} · {Math.round(ratingAfter)}
         </p>
       </div>
     </div>
@@ -103,8 +105,8 @@ export default function RecentMatchList({ userId }) {
           rating_after,
           rating_delta,
           created_at,
-          opponent:opponent_id (nickname, rating),
-          match:match_id (player_a_id, racks_won, racks_lost)
+          opponent:users!rating_snapshots_opponent_id_fkey (nickname, rating),
+          match:matches!rating_snapshots_match_id_fkey (player_a_id, racks_won, racks_lost)
         `)
         .eq('user_id', userId)
         .gte('created_at', sevenDaysAgo)
