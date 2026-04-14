@@ -36,12 +36,15 @@ export default function RegisterPage() {
     if (signUpError) {
       setLoading(false)
       const msg = signUpError.message?.toLowerCase() || ''
+      const code = signUpError.status || signUpError.code
       setError(
         msg.includes('already registered') || msg.includes('already exists') || msg.includes('duplicate')
           ? '该账号已注册，请直接登录'
           : msg.includes('invalid') && msg.includes('email')
           ? '账号格式有误，请重新输入'
-          : '注册失败，请稍后重试'
+          : msg.includes('rate limit') || msg.includes('over_email') || code === 429
+          ? '注册请求太频繁，请等待 1 分钟后重试'
+          : `注册失败：${signUpError.message}`
       )
       return
     }
