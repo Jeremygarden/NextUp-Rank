@@ -102,7 +102,8 @@ serve(async (req) => {
       event: 'MATCH_CREATED',
       payload: {
         match_id: match.id,
-        player_name: defaultNickname,
+        inviter: defaultNickname,
+        player_name: defaultNickname, // legacy compat
         rating: null,
         venue_name: null,
         invite_code,

@@ -607,7 +607,7 @@ export default function SubmitResultPage() {
                 <div className="flex items-start gap-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-6">
                   <span className="text-xl">💡</span>
                   <p className="text-slate-300 text-sm leading-relaxed">
-                    先提交比分的一方等待对手确认，对手确认后完成结算
+                    填写比分后提交，等待对手确认后自动结算
                   </p>
                 </div>
                 <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
