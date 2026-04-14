@@ -83,18 +83,25 @@ serve(async (req) => {
     }
 
     // Atomic concurrency lock — flip status from 'locked' → 'awaiting_confirmation'
-    // Either player can submit first; submitted_by records who did
+    // Either player can submit first; submitted_by records who did.
+    // player_a_racks_won/lost are ALWAYS stored from Player A's perspective:
+    //   - If submitter is Player A: store as-is
+    //   - If submitter is Player B: flip (B's racks_won = A's racks_lost)
+    const isSubmitterPlayerA = matchCheck.player_a_id === user.id
+    const normalizedRacksWon = isSubmitterPlayerA ? racks_won : racks_lost   // A's wins
+    const normalizedRacksLost = isSubmitterPlayerA ? racks_lost : racks_won  // A's losses
+
     const { data: lockRow, error: atomicLockError } = await supabase
       .from('matches')
       .update({
         status: 'awaiting_confirmation',
-        player_a_racks_won: racks_won,
-        player_a_racks_lost: racks_lost,
+        player_a_racks_won: normalizedRacksWon,
+        player_a_racks_lost: normalizedRacksLost,
         submitted_by: user.id,
         score_submitted_at: new Date().toISOString(),
         // Legacy compat
-        racks_won,
-        racks_lost,
+        racks_won: normalizedRacksWon,
+        racks_lost: normalizedRacksLost,
       })
       .eq('id', match_id)
       .eq('status', 'locked')
