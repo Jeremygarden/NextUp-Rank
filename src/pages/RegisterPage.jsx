@@ -1,22 +1,11 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-
-const PHONE_DOMAIN = 'nextup-rank.phone'
-
-function toFakeEmail(phone) {
-  const digits = phone.replace(/[\s\-]/g, '')
-  const normalized = digits.startsWith('+') ? digits : `+86${digits}`
-  return `${normalized}@${PHONE_DOMAIN}`
-}
-
-function isPhoneInput(value) {
-  return /^[+\d\s\-]{7,15}$/.test(value.trim())
-}
+import { toFakeEmail, isPhoneInput } from '../lib/phoneAuth'
 
 export default function RegisterPage() {
   const [nickname, setNickname] = useState('')
-  const [account, setAccount] = useState('') // phone or email
+  const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState(null)
@@ -28,20 +17,14 @@ export default function RegisterPage() {
   const handleSignUp = async (e) => {
     e.preventDefault()
     setError(null)
-    if (password !== confirm) {
-      setError('两次密码不一致')
-      return
-    }
-    if (password.length < 6) {
-      setError('密码至少 6 位')
-      return
-    }
+    if (password !== confirm) { setError('两次密码不一致'); return }
+    if (password.length < 6) { setError('密码至少 6 位'); return }
 
     setLoading(true)
 
     const emailToUse = isPhone ? toFakeEmail(account) : account
     const phoneDigits = isPhone
-      ? account.replace(/[\s\-]/g, '').replace(/^\+?86/, '')
+      ? account.replace(/[\s\-+]/g, '').replace(/^86/, '')
       : null
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -56,17 +39,16 @@ export default function RegisterPage() {
       setError(
         msg.includes('already registered') || msg.includes('already exists') || msg.includes('duplicate')
           ? '该账号已注册，请直接登录'
-          : signUpError.message
+          : msg.includes('invalid') && msg.includes('email')
+          ? '账号格式有误，请重新输入'
+          : '注册失败，请稍后重试'
       )
       return
     }
 
-    // If phone registration, also store phone in users table
+    // Store phone in users table for display purposes
     if (data?.user && phoneDigits) {
-      await supabase
-        .from('users')
-        .update({ phone: phoneDigits })
-        .eq('id', data.user.id)
+      await supabase.from('users').update({ phone: phoneDigits }).eq('id', data.user.id)
     }
 
     setLoading(false)
@@ -84,11 +66,10 @@ export default function RegisterPage() {
         </div>
         {success ? (
           <div className="text-center">
-            {isPhone ? (
-              <p className="text-green-400 font-medium">注册成功！请直接登录 🎱</p>
-            ) : (
-              <p className="text-green-400 font-medium">请查收邮件，确认注册后登录</p>
-            )}
+            {isPhone
+              ? <p className="text-green-400 font-medium">注册成功！请直接登录 🎱</p>
+              : <p className="text-green-400 font-medium">请查收邮件，确认注册后登录</p>
+            }
             <Link to="/login" className="mt-4 inline-block text-indigo-400 hover:underline text-sm">
               前往登录 →
             </Link>
@@ -110,15 +91,13 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-1">
               <label htmlFor="account" className="text-slate-400 text-xs font-medium">
                 手机号或邮箱
-                {isPhone && account.length > 6 && (
-                  <span className="ml-2 text-indigo-400">📱 手机号</span>
-                )}
+                {isPhone && <span className="ml-2 text-indigo-400 text-xs">📱 手机号</span>}
               </label>
               <input
                 id="account"
                 type="text"
                 inputMode="tel"
-                placeholder="138 0000 0000 或 you@email.com"
+                placeholder="手机号 或 you@email.com"
                 value={account}
                 onChange={e => setAccount(e.target.value)}
                 required

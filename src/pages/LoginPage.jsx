@@ -1,24 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-
-const PHONE_DOMAIN = 'nextup-rank.phone'
-
-function toFakeEmail(phone) {
-  // Normalize: strip spaces/dashes, ensure +86 prefix for mainland
-  const digits = phone.replace(/[\s\-]/g, '')
-  const normalized = digits.startsWith('+') ? digits : `+86${digits}`
-  return `${normalized}@${PHONE_DOMAIN}`
-}
-
-function isPhoneInput(value) {
-  // Treat as phone if it's all digits (possibly with leading +/spaces)
-  return /^[+\d\s\-]{7,15}$/.test(value.trim())
-}
+import { toFakeEmail, isPhoneInput } from '../lib/phoneAuth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [account, setAccount] = useState('') // phone or email
+  const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -28,21 +15,20 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const emailToUse = isPhoneInput(account)
-      ? toFakeEmail(account)
-      : account
+    const emailToUse = isPhoneInput(account) ? toFakeEmail(account) : account
 
     const { error } = await supabase.auth.signInWithPassword({ email: emailToUse, password })
     setLoading(false)
     if (error) {
       const msg = error.message?.toLowerCase() || ''
-      const friendly = msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('email not confirmed')
-        ? '手机号/邮箱或密码错误，请重新输入'
-        : msg.includes('too many requests') || msg.includes('rate limit')
-        ? '请求过于频繁，请稍后再试'
-        : msg.includes('user not found') || msg.includes('no user')
-        ? '该账号不存在，请先注册'
-        : '登录失败，请稍后重试'
+      const friendly =
+        msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('email not confirmed')
+          ? '手机号/邮箱或密码错误，请重新输入'
+          : msg.includes('too many requests') || msg.includes('rate limit')
+          ? '请求过于频繁，请稍后再试'
+          : msg.includes('user not found') || msg.includes('no user')
+          ? '该账号不存在，请先注册'
+          : '登录失败，请稍后重试'
       setError(friendly)
     } else {
       navigate('/')
@@ -65,7 +51,7 @@ export default function LoginPage() {
               id="account"
               type="text"
               inputMode="tel"
-              placeholder="138 0000 0000"
+              placeholder="手机号 或 you@email.com"
               value={account}
               onChange={e => setAccount(e.target.value)}
               required
