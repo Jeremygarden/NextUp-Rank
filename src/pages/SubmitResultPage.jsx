@@ -222,9 +222,62 @@ function PendingConfirmation({ matchId, navigate, onConfirmed, myRatingBefore })
 }
 
 // Confirmer: show submitted score and confirm
-function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, navigate, onConfirmed }) {
+function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, navigate, onConfirmed, onBackToPending }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const pollRef = useRef(null)
+  const channelRef = useRef(null)
+  const myRatingRef = useRef(null)
+
+  // Subscribe to RESULT_CONFIRMED + poll for completed status
+  // Handles the case where opponent confirms while submitter is stuck on confirm phase
+  useEffect(() => {
+    let cancelled = false
+
+    async function setupWatch() {
+      const { data: { session } } = await supabase.auth.getSession()
+      const uid = session?.user?.id
+      const { data: userRow } = await supabase.from('users').select('rating').eq('id', uid).single()
+      myRatingRef.current = userRow?.rating ?? 1500
+
+      const channel = supabase
+        .channel('plaza_events_confirm_' + matchId)
+        .on('broadcast', { event: 'RESULT_CONFIRMED' }, async ({ payload }) => {
+          if (payload?.match_id !== matchId) return
+          const myResult = payload?.player_a?.user_id === uid
+            ? payload.player_a
+            : payload?.player_b?.user_id === uid
+              ? payload.player_b
+              : null
+          onConfirmed(myResult || { rating_before: myRatingRef.current, rating_after: myRatingRef.current })
+        })
+        .subscribe()
+      channelRef.current = channel
+
+      pollRef.current = setInterval(async () => {
+        const { data } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', matchId)
+          .single()
+        if (data?.status === 'completed' && !cancelled) {
+          clearInterval(pollRef.current)
+          const { data: { session: s2 } } = await supabase.auth.getSession()
+          const uid2 = s2?.user?.id
+          const { data: userRow2 } = await supabase.from('users').select('rating').eq('id', uid2).single()
+          onConfirmed({ rating_before: myRatingRef.current, rating_after: userRow2?.rating ?? myRatingRef.current })
+        }
+      }, 5000)
+    }
+
+    setupWatch()
+
+    return () => {
+      cancelled = true
+      clearInterval(pollRef.current)
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
+    }
+  }, [matchId, onConfirmed])
 
   async function handleConfirm() {
     setLoading(true)
@@ -241,7 +294,15 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, navi
         body: JSON.stringify({ match_id: matchId }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || '确认失败')
+      if (!res.ok) {
+        const msg = json.error || '确认失败'
+        // Submitter accidentally tapped confirm — gracefully return to pending phase
+        if (res.status === 409 && msg.toLowerCase().includes('cannot confirm your own submission')) {
+          onBackToPending?.()
+          return
+        }
+        throw new Error(msg)
+      }
       // Find my result: current user may be player_a or player_b in the response
       const { data: { session: s2 } } = await supabase.auth.getSession()
       const uid = s2?.user?.id
@@ -603,6 +664,7 @@ export default function SubmitResultPage() {
                   setSettlementResult(result)
                   setPhase('settled')
                 }}
+                onBackToPending={() => setPhase('pending')}
               />
             )}
 
