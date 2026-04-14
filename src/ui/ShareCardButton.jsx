@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react'
-import { toPng } from 'html-to-image'
-import ShareCard from './ShareCard'
+import React, { useRef, useState, lazy, Suspense } from 'react'
+
+// Lazy-load ShareCard so html-to-image + card code is split into a separate chunk
+const ShareCard = lazy(() => import('./ShareCard'))
 
 export default function ShareCardButton({ myNickname, opponentNickname, ratingBefore, ratingAfter, racksWon, racksLost, isWin }) {
   const cardRef = useRef(null)
@@ -10,6 +11,9 @@ export default function ShareCardButton({ myNickname, opponentNickname, ratingBe
     if (!cardRef.current) return
     setLoading(true)
     try {
+      // Dynamically import html-to-image only when user taps share
+      const { toPng } = await import('html-to-image')
+
       const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 })
 
       const blob = await fetch(dataUrl).then(r => r.blob())
@@ -39,17 +43,19 @@ export default function ShareCardButton({ myNickname, opponentNickname, ratingBe
 
   return (
     <>
-      {/* Hidden card for screenshot */}
-      <ShareCard
-        cardRef={cardRef}
-        myNickname={myNickname}
-        opponentNickname={opponentNickname}
-        ratingBefore={ratingBefore}
-        ratingAfter={ratingAfter}
-        racksWon={racksWon}
-        racksLost={racksLost}
-        isWin={isWin}
-      />
+      {/* Hidden card for screenshot — lazy loaded, renders off-screen */}
+      <Suspense fallback={null}>
+        <ShareCard
+          cardRef={cardRef}
+          myNickname={myNickname}
+          opponentNickname={opponentNickname}
+          ratingBefore={ratingBefore}
+          ratingAfter={ratingAfter}
+          racksWon={racksWon}
+          racksLost={racksLost}
+          isWin={isWin}
+        />
+      </Suspense>
 
       {/* Share button */}
       <button
