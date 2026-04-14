@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -22,23 +23,29 @@ function LoadingSkeleton() {
 }
 
 function EmptyState() {
+  const navigate = useNavigate()
   return (
     <div className="text-center py-8 text-slate-500">
       <p className="text-2xl mb-2">🎱</p>
       <p className="text-sm">最近 7 天暂无比赛记录</p>
-      <p className="text-xs mt-1">快去广场发起对局！</p>
+      <button
+        onClick={() => navigate('/create-match')}
+        className="mt-3 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-2xl transition-colors"
+      >
+        去发起对局 →
+      </button>
     </div>
   )
 }
 
 function MatchRow({ match }) {
-  const { isWin, opponentNickname, opponentRating, myScore, oppScore, ratingDelta, ratingAfter, createdAt } = match
+  const { isWin, isDraw, opponentNickname, opponentRating, myScore, oppScore, ratingDelta, ratingAfter, createdAt } = match
 
   const deltaSign = ratingDelta > 0 ? '+' : ''
-  const deltaColor = isWin ? 'text-green-400' : 'text-red-400'
-  const resultColor = isWin ? 'text-green-400' : 'text-red-400'
-  const resultEmoji = isWin ? '🏆' : '😤'
-  const resultLabel = isWin ? '胜' : '负'
+  const deltaColor = isDraw ? 'text-slate-400' : isWin ? 'text-green-400' : 'text-red-400'
+  const resultColor = isDraw ? 'text-slate-400' : isWin ? 'text-green-400' : 'text-red-400'
+  const resultEmoji = isDraw ? '🤝' : isWin ? '🏆' : '😤'
+  const resultLabel = isDraw ? '平' : isWin ? '胜' : '负'
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
@@ -75,6 +82,7 @@ function MatchRow({ match }) {
 export default function RecentMatchList({ userId }) {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (userId) fetchRecentMatches()
@@ -82,10 +90,11 @@ export default function RecentMatchList({ userId }) {
 
   async function fetchRecentMatches() {
     setLoading(true)
+    setError(null)
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-      const { data: snapshots, error } = await supabase
+      const { data: snapshots, error: fetchErr } = await supabase
         .from('rating_snapshots')
         .select(`
           id,
@@ -102,10 +111,12 @@ export default function RecentMatchList({ userId }) {
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (error) throw error
+      if (fetchErr) throw fetchErr
 
       const parsed = (snapshots || []).map(s => {
-        const isWin = (s.rating_delta ?? 0) > 0
+        const delta = s.rating_delta ?? 0
+        const isWin = delta > 0
+        const isDraw = delta === 0
         const isPlayerA = s.match?.player_a_id === userId
         const racksWon = s.match?.racks_won ?? 0
         const racksLost = s.match?.racks_lost ?? 0
@@ -115,11 +126,12 @@ export default function RecentMatchList({ userId }) {
         return {
           id: s.id,
           isWin,
+          isDraw,
           opponentNickname: s.opponent?.nickname ?? '未知对手',
           opponentRating: s.opponent?.rating ?? null,
           myScore,
           oppScore,
-          ratingDelta: s.rating_delta ?? 0,
+          ratingDelta: delta,
           ratingAfter: s.rating_after ?? 0,
           createdAt: s.created_at,
         }
@@ -128,6 +140,7 @@ export default function RecentMatchList({ userId }) {
       setMatches(parsed)
     } catch (e) {
       console.error('Failed to fetch recent matches', e)
+      setError('加载失败，请稍后重试')
       setMatches([])
     } finally {
       setLoading(false)
@@ -135,6 +148,12 @@ export default function RecentMatchList({ userId }) {
   }
 
   if (loading) return <LoadingSkeleton />
+  if (error) return (
+    <div className="text-center py-6 text-slate-500">
+      <p className="text-sm">{error}</p>
+      <button onClick={fetchRecentMatches} className="mt-2 text-indigo-400 text-xs hover:underline">重试</button>
+    </div>
+  )
   if (matches.length === 0) return <EmptyState />
 
   return (
