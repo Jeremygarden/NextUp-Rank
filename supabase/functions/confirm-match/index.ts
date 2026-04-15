@@ -17,25 +17,44 @@ if (MATH_USE_MOCK === 'false' && !MATH_SERVICE_URL) {
   throw new Error('MATH_USE_MOCK=false but MATH_SERVICE_URL is not configured')
 }
 
+// Mock Glicko-2 calculator — matches math-service/main.py logic
+// Used as fallback when math service is unreachable
 function mockCalculateRating(params: {
   rating: number, rd: number, vol: number,
   racks_won: number, racks_lost: number,
   opp_rating: number, opp_rd: number
 }) {
   const { rating, rd, vol, racks_won, racks_lost, opp_rating, opp_rd } = params
+  const SCALE = 173.7178
+  const TAU = 0.75 // Match math-service TAU
+
   const total = racks_won + racks_lost
   const s_adj = total > 0 ? 0.5 + ((racks_won - racks_lost) / total) * 0.5 : 0.5
 
-  const q = Math.log(10) / 400
-  const g_rd = 1 / Math.sqrt(1 + 3 * q * q * opp_rd * opp_rd / (Math.PI * Math.PI))
-  const e = 1 / (1 + Math.pow(10, -g_rd * (rating - opp_rating) / 400))
+  // Convert to Glicko-2 internal scale
+  const mu = (rating - 1500) / SCALE
+  const phi = rd / SCALE
+  const mu_j = (opp_rating - 1500) / SCALE
+  const phi_j = opp_rd / SCALE
 
-  const d2 = 1 / (q * q * g_rd * g_rd * e * (1 - e))
-  const delta = q / (1 / (rd * rd) + 1 / d2) * g_rd * (s_adj - e)
+  // g(phi_j) and E
+  const g_phi_j = 1 / Math.sqrt(1 + 3 * phi_j * phi_j / (Math.PI * Math.PI))
+  const E = 1 / (1 + Math.exp(-g_phi_j * (mu - mu_j)))
 
-  const new_rating = Math.round((rating + delta) * 100) / 100
-  const new_rd = Math.max(30, Math.sqrt(1 / (1 / (rd * rd) + 1 / d2)))
+  // Variance v and delta
+  const v = 1 / (g_phi_j * g_phi_j * E * (1 - E))
+  const delta = v * g_phi_j * (s_adj - E)
+
+  // Volatility update (simplified: use vol unchanged for mock)
   const new_vol = vol
+
+  // Update phi and mu
+  const phi_star = Math.sqrt(phi * phi + new_vol * new_vol)
+  const new_phi = 1 / Math.sqrt(1 / (phi_star * phi_star) + 1 / v)
+  const new_mu = mu + new_phi * new_phi * g_phi_j * (s_adj - E)
+
+  const new_rating = Math.round((new_mu * SCALE + 1500) * 100) / 100
+  const new_rd = Math.max(30, new_phi * SCALE)
 
   return { new_rating, new_rd, new_vol }
 }
