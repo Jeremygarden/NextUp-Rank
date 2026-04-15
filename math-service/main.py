@@ -47,7 +47,7 @@ def calculate_glicko2(rating: float, rd: float, vol: float, results: list) -> tu
     Full Glicko-2 calculation per Glickman (2012).
     results: list of (opp_rating, opp_rd, score) where score ∈ [0, 1]
     """
-    TAU = 0.5
+    TAU = 0.75  # Billiard-optimized tau (0.75 vs chess default 0.5) — higher volatility sport
     EPSILON = 1e-6
 
     # Convert to Glicko-2 internal scale
