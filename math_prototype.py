@@ -6,7 +6,7 @@ class BilliardGlicko:
     Billiard-Glicko (BG-1) Implementation
     Based on Glicko-2 with Rack-level Score Adjustment (S_adj).
     """
-    def __init__(self, tau=0.5):
+    def __init__(self, tau=0.75):  # Billiard-optimized default: 0.75 (chess default is 0.5)
         self.tau = tau  # Constrains volatility changes over time
 
     def _g(self, phi):
