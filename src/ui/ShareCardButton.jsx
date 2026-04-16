@@ -4,6 +4,11 @@ import React, { useRef, useState, lazy, Suspense } from 'react'
 const ShareCard = lazy(() => import('./ShareCard'))
 
 export default function ShareCardButton({ myNickname, opponentNickname, ratingBefore, ratingAfter, racksWon, racksLost, isWin }) {
+  // Defensive defaults: ensure numeric values so ShareCard never renders NaN
+  const safeRatingBefore = typeof ratingBefore === 'number' && !isNaN(ratingBefore) ? ratingBefore : 1500
+  const safeRatingAfter  = typeof ratingAfter  === 'number' && !isNaN(ratingAfter)  ? ratingAfter  : 1500
+  const safeRacksWon     = typeof racksWon     === 'number' ? racksWon     : 0
+  const safeRacksLost    = typeof racksLost    === 'number' ? racksLost    : 0
   const cardRef = useRef(null)
   const [loading, setLoading] = useState(false)
 
@@ -49,10 +54,10 @@ export default function ShareCardButton({ myNickname, opponentNickname, ratingBe
           cardRef={cardRef}
           myNickname={myNickname}
           opponentNickname={opponentNickname}
-          ratingBefore={ratingBefore}
-          ratingAfter={ratingAfter}
-          racksWon={racksWon}
-          racksLost={racksLost}
+          ratingBefore={safeRatingBefore}
+          ratingAfter={safeRatingAfter}
+          racksWon={safeRacksWon}
+          racksLost={safeRacksLost}
           isWin={isWin}
         />
       </Suspense>
