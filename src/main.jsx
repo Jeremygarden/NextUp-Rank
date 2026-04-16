@@ -13,10 +13,12 @@ import SubmitResultPage from './pages/SubmitResultPage'
 import ProfilePage from './pages/ProfilePage'
 import OfflineToast from './ui/OfflineToast'
 import PWAInstallPrompt from './ui/PWAInstallPrompt'
+import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <ErrorBoundary>
     <BrowserRouter>
       <AuthProvider>
         <OfflineToast />
@@ -33,5 +35,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 )
