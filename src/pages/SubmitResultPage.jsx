@@ -70,9 +70,11 @@ function Counter({ label, value, onChange }) {
 }
 
 // Settlement result display (both players)
-function SettlementResult({ result, navigate, myNickname, opponentNickname, racksWon, racksLost }) {
+function SettlementResult({ result, navigate, myNickname, opponentNickname, racksWon, racksLost, totalMatches }) {
   const delta = result ? (result.rating_after - result.rating_before) : 0
   const isWin = racksWon > racksLost
+  // totalMatches is the count AFTER this match settled; calibration covers first 8 matches
+  const isCalibrating = totalMatches !== null && totalMatches <= 8
 
   useEffect(() => {
     const timer = setTimeout(() => navigate('/'), 8000)
@@ -111,6 +113,22 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
             {Math.round(result.rating_after)}
           </motion.span>
         </div>
+        {isCalibrating && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+            className="mt-4 flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 text-left"
+          >
+            <span className="text-amber-400 mt-0.5 shrink-0">⚡</span>
+            <div>
+              <p className="text-amber-400 text-xs font-bold mb-0.5">
+                定级赛 {totalMatches}/8 — 校准中
+              </p>
+              <p className="text-amber-400/70 text-xs leading-relaxed">
+                前 8 场积分波动较大，系统正在校准你的真实水平，这是正常现象。
+              </p>
+            </div>
+          </motion.div>
+        )}
       </div>
       <ShareCardButton
         myNickname={myNickname || '我'}
@@ -395,6 +413,7 @@ export default function SubmitResultPage() {
   // phase: 'form' | 'pending' | 'confirm' | 'settled'
   const [phase, setPhase] = useState(null)
   const [settlementResult, setSettlementResult] = useState(null)
+  const [totalMatches, setTotalMatches] = useState(null)
 
   const [hasInteracted, setHasInteracted] = useState(false)
   const [showAbandonModal, setShowAbandonModal] = useState(false)
@@ -453,6 +472,18 @@ export default function SubmitResultPage() {
       .eq('id', matchId)
       .single()
   }, [matchId])
+
+  // Fetch total completed matches for current user (for calibration badge)
+  const fetchTotalMatches = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const uid = session?.user?.id
+    if (!uid) return
+    const { count } = await supabase
+      .from('rating_snapshots')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', uid)
+    setTotalMatches(count ?? 0)
+  }, [])
 
   useEffect(() => {
     async function init() {
@@ -647,6 +678,7 @@ export default function SubmitResultPage() {
                 myRatingBefore={myRatingBefore}
                 onConfirmed={(result) => {
                   setSettlementResult(result)
+                  fetchTotalMatches()
                   setPhase('settled')
                 }}
               />
@@ -667,6 +699,7 @@ export default function SubmitResultPage() {
                   setRacksWon(matchInfo.player_a_racks_lost ?? 0)
                   setRacksLost(matchInfo.player_a_racks_won ?? 0)
                   setSettlementResult(result)
+                  fetchTotalMatches()
                   setPhase('settled')
                 }}
                 onBackToPending={() => setPhase('pending')}
@@ -683,6 +716,7 @@ export default function SubmitResultPage() {
                 opponentNickname={opponentNickname}
                 racksWon={racksWon}
                 racksLost={racksLost}
+                totalMatches={totalMatches}
               />
             )}
 
