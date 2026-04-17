@@ -16,8 +16,8 @@ export function getRankInfo(rating) {
   if (rating >= 1900) return { color: '#CCABD8', label: '大师', tier: 7, emoji: '🏆' }
   if (rating >= 1700) return { color: '#FA897B', label: '精英', tier: 6, emoji: '💎' }
   if (rating >= 1500) return { color: '#FFDD94', label: '黄金', tier: 5, emoji: '🥇' }
-  if (rating >= 1400) return { color: '#93C5FD', label: '进阶', tier: 4, emoji: '🔵' }
-  if (rating >= 1300) return { color: '#CBD5E1', label: '白银', tier: 3, emoji: '🥈' }
+  if (rating >= 1400) return { color: '#93C5FD', label: '白银', tier: 4, emoji: '🥈' }
+  if (rating >= 1300) return { color: '#CBD5E1', label: '进阶', tier: 3, emoji: '🔵' }
   if (rating >= 1100) return { color: '#86EFAC', label: '爱好', tier: 2, emoji: '🎱' }
   return                      { color: '#6EE7B7', label: '入门', tier: 1, emoji: '🌱' }
 }
