@@ -71,6 +71,15 @@ serve(async (req) => {
       { onConflict: "id", ignoreDuplicates: true }
     );
 
+    // Fetch current user rating for rank badge display in plaza
+    const { data: userRow } = await supabaseAdmin
+      .from("users")
+      .select("rating, nickname")
+      .eq("id", player_a_id)
+      .single();
+    const playerRating = userRow?.rating ?? 1500;
+    const playerNickname = userRow?.nickname ?? defaultNickname;
+
     const invite_code = generateInviteCode();
     const match_metadata = {
       invite_code,
@@ -102,9 +111,10 @@ serve(async (req) => {
       event: 'MATCH_CREATED',
       payload: {
         match_id: match.id,
-        inviter: defaultNickname,
-        player_name: defaultNickname, // legacy compat
-        rating: null,
+        inviter: playerNickname,
+        player_name: playerNickname, // legacy compat
+        inviterRating: playerRating,
+        rating: playerRating,
         venue_name: null,
         invite_code,
         game_type,

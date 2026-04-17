@@ -119,6 +119,18 @@ serve(async (req) => {
 
     if (updateError) throw new Error(updateError.message);
 
+    // Fetch player_a info for rank display on join page
+    const { data: playerARow } = await supabaseAdmin
+      .from("users")
+      .select("nickname, rating")
+      .eq("id", match.player_a_id)
+      .single();
+
+    const initiator = {
+      nickname: playerARow?.nickname ?? '对手',
+      rating: playerARow?.rating ?? 1500,
+    }
+
     // Broadcast HANDSHAKE_SUCCESS to plaza_events for real-time frontend updates
     await supabaseAdmin.channel('plaza_events').send({
       type: 'broadcast',
@@ -133,7 +145,7 @@ serve(async (req) => {
     })
 
     return new Response(
-      JSON.stringify({ match_id: match.id, status: "locked", is_lbs_verified, distance_meters }),
+      JSON.stringify({ match_id: match.id, status: "locked", is_lbs_verified, distance_meters, initiator }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {

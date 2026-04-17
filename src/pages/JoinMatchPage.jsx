@@ -5,6 +5,7 @@ import { Loader2, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import LBSHandshakeAnimation from '../ui/LBSHandshakeAnimation'
 import GlobalTabBar from '../ui/GlobalTabBar'
+import { getRankInfo, getRankGap } from '../lib/rankColor'
 
 export default function JoinMatchPage() {
   const navigate = useNavigate()
@@ -13,6 +14,9 @@ export default function JoinMatchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  // rankPreview: show rank gap info before entering animation
+  const [rankPreviewDone, setRankPreviewDone] = useState(false)
+  const [myRating, setMyRating] = useState(1500)
 
   async function handleJoin() {
     if (code.length !== 6) return
@@ -49,9 +53,13 @@ export default function JoinMatchPage() {
       }
       // Store session user info for animation
       const userMeta = session?.user?.user_metadata
+      // Fetch actual rating from DB for rank gap calculation
+      const { data: myRow } = await supabase.from('users').select('rating, nickname').eq('id', userId).single()
+      const myActualRating = myRow?.rating ?? 1500
+      setMyRating(myActualRating)
       json._playerB = {
-        nickname: userMeta?.nickname || userMeta?.full_name || session?.user?.email?.split('@')[0] || '我',
-        rating: userMeta?.rating || 1500,
+        nickname: myRow?.nickname || userMeta?.nickname || userMeta?.full_name || session?.user?.email?.split('@')[0] || '我',
+        rating: myActualRating,
       }
       setSuccess(json)
     } catch (e) {
@@ -72,11 +80,20 @@ export default function JoinMatchPage() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {success ? (
+          rankPreviewDone ? (
           <LBSHandshakeAnimation
             playerA={success.initiator || { nickname: '对手', rating: 1500 }}
             playerB={success._playerB || { nickname: '我', rating: 1500 }}
             onComplete={() => navigate(`/submit/${success.match_id}`, { state: { matchId: success.match_id } })}
           />
+          ) : (
+            // Rank gap preview card
+            <RankPreviewCard
+              initiator={success.initiator || { nickname: '对手', rating: 1500 }}
+              myRating={myRating}
+              onContinue={() => setRankPreviewDone(true)}
+            />
+          )
         ) : (
           <>
             <div className="mb-8 text-center">
@@ -123,5 +140,81 @@ export default function JoinMatchPage() {
       </div>
       <GlobalTabBar />
     </div>
+  )
+}
+
+/**
+ * RankPreviewCard — shown after successful handshake, before LBS animation.
+ * Displays opponent rank info and a gap warning if tiers differ significantly.
+ */
+function RankPreviewCard({ initiator, myRating, onContinue }) {
+  const oppRank = getRankInfo(initiator.rating)
+  const myRank = getRankInfo(myRating)
+  const gap = getRankGap(initiator.rating, myRating)
+
+  const gapMessages = {
+    3: { text: '水平差距较大，积分变化会较小', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', icon: '⚠️' },
+    2: { text: '水平有一定差距，积分变化会偏小', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30', icon: '⚡' },
+    1: { text: '水平相近，是场好球！', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', icon: '✅' },
+    0: { text: '段位完全相当，势均力敌！', color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/30', icon: '🎯' },
+  }
+  const gapInfo = gapMessages[gap]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+      className="w-full max-w-sm"
+    >
+      <h2 className="text-xl font-bold text-center mb-6">对手信息</h2>
+
+      {/* Opponent rank card */}
+      <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-4">
+        <p className="text-slate-400 text-xs mb-3 uppercase tracking-widest">对手</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-white font-bold text-lg">{initiator.nickname}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: oppRank.color + '22', color: oppRank.color, border: `1px solid ${oppRank.color}55` }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: oppRank.color }} />
+                {oppRank.label}
+              </span>
+            </div>
+          </div>
+          <span className="text-3xl font-black font-mono text-slate-300">{Math.round(initiator.rating)}</span>
+        </div>
+
+        <div className="border-t border-slate-800 mt-4 pt-4 flex items-center justify-between">
+          <div>
+            <p className="text-slate-400 text-xs mb-1">我</p>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full"
+                style={{ backgroundColor: myRank.color + '22', color: myRank.color, border: `1px solid ${myRank.color}55` }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: myRank.color }} />
+                {myRank.label}
+              </span>
+            </div>
+          </div>
+          <span className="text-2xl font-black font-mono text-slate-400">{Math.round(myRating)}</span>
+        </div>
+      </div>
+
+      {/* Gap warning */}
+      <div className={`flex items-center gap-2 rounded-2xl px-4 py-3 border mb-6 ${gapInfo.bg}`}>
+        <span>{gapInfo.icon}</span>
+        <p className={`text-sm font-medium ${gapInfo.color}`}>{gapInfo.text}</p>
+      </div>
+
+      <button
+        onClick={onContinue}
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-colors text-lg"
+      >
+        开始对局 →
+      </button>
+    </motion.div>
   )
 }
