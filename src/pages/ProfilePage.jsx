@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showRdTip, setShowRdTip] = useState(false)
+  const [showCalibrationTip, setShowCalibrationTip] = useState(false)
   const [editingNickname, setEditingNickname] = useState(false)
   const [nicknameInput, setNicknameInput] = useState('')
   const [nicknameLoading, setNicknameLoading] = useState(false)
@@ -256,8 +257,25 @@ export default function ProfilePage() {
                     </div>
                   )
                 })()}
-                {profile.rating === 1500 && snapshots.length === 0 && (
-                  <p className="text-slate-500 text-xs mt-1">初始积分，打完首场后会变化</p>
+                {snapshots.length < 8 && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                      定级赛 {snapshots.length}/8
+                    </span>
+                    <button
+                      onClick={() => setShowCalibrationTip(t => !t)}
+                      aria-label="了解定级赛"
+                      className="text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    </button>
+                  </div>
+                )}
+                {showCalibrationTip && snapshots.length < 8 && (
+                  <p className="text-amber-400/80 text-xs mt-1.5 leading-relaxed">
+                    前 8 场为定级赛，积分波动较大，系统正在校准你的真实水平。
+                  </p>
                 )}
               </div>
               <motion.div
