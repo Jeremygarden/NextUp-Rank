@@ -203,14 +203,6 @@ const PlazaPane = ({ matches, loading }) => {
                   : `${(match.distanceMeters / 1000).toFixed(1)}km`}
               </p>
             )}
-            {rankInfo && (
-              <div className="flex items-center gap-1.5 mb-1 pl-1">
-                <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: rankInfo.color }} />
-                <span className="text-xs font-medium" style={{ color: rankInfo.color }}>
-                  {rankInfo.label} · {inviterRating.toFixed(0)}
-                </span>
-              </div>
-            )}
             {match.isOwn && (
               <div className="flex items-center justify-between mb-1 pl-1 pr-1">
                 <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
@@ -219,7 +211,7 @@ const PlazaPane = ({ matches, loading }) => {
                 <CancelMatchButton matchId={match.id ?? match.match_id} />
               </div>
             )}
-            <SmartInviteCard {...match} expiresInSeconds={secondsLeft} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
+            <SmartInviteCard {...match} inviterRating={typeof inviterRating === 'number' ? inviterRating : null} expiresInSeconds={secondsLeft} onAccept={match.isOwn ? undefined : () => handleAccept(match)} />
           </div>
         )
       })}

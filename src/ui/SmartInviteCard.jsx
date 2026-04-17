@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Target, Clock, Trophy, ChevronRight, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getRankInfo } from "../lib/rankColor";
 
 /**
  * Constants & Helpers
@@ -59,6 +60,7 @@ const CountdownBadge = ({ seconds }) => {
  */
 const SmartInviteCard = ({
   inviter = "玩家",
+  inviterRating = null,
   gameType = "8ball",
   location = "球馆",
   startTime = "今晚 20:00",
@@ -150,6 +152,20 @@ const SmartInviteCard = ({
               <RoleBadge role={role} />
             </div>
             <h3 className="text-xl text-white font-bold">{inviter}</h3>
+            {inviterRating !== null && (() => {
+              const rank = getRankInfo(inviterRating)
+              return (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: rank.color + '22', color: rank.color, border: `1px solid ${rank.color}55` }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
+                    {rank.label} · {Math.round(inviterRating)}
+                  </span>
+                </div>
+              )
+            })()}
           </div>
         </div>
 
