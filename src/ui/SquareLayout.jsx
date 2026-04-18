@@ -32,7 +32,8 @@ function CancelMatchButton({ matchId }) {
     <button
       onClick={handleCancel}
       disabled={loading}
-      className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-40 transition-colors px-2 py-0.5 rounded-full border border-red-800/40 hover:bg-red-500/10"
+      className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-label transition-colors px-2 py-1 disabled:opacity-40"
+      style={{ border: '1px solid #8b3a3a', color: '#8b3a3a', background: 'transparent' }}
     >
       {loading ? <Loader2 size={10} className="animate-spin" /> : <X size={10} />}
       取消球局
@@ -84,22 +85,28 @@ const SquareLayout = ({
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Tab Bar */}
-      <div className="flex border-b border-slate-800 bg-slate-900 sticky top-0 z-10">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0a0a0a', color: '#e8e8e4' }}>
+      {/* Industrial Tab Bar */}
+      <div
+        className="flex sticky top-0 z-10"
+        style={{ backgroundColor: '#0a0a0a', borderBottom: '1px solid #1e1e1e' }}
+      >
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => switchTab(tab.key)}
-            className={`flex-1 py-4 text-base font-bold tracking-wide transition-colors duration-200 relative ${
-              activeTab === tab.key ? "text-white" : "text-slate-500 hover:text-slate-300"
-            }`}
+            className="flex-1 py-4 text-sm font-bold uppercase tracking-industrial transition-colors duration-200 relative"
+            style={{
+              color: activeTab === tab.key ? '#e8e8e4' : '#5c5c58',
+              background: 'transparent',
+            }}
           >
             {tab.label}
             {activeTab === tab.key && (
               <motion.div
                 layoutId="tab-underline"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                className="absolute bottom-0 left-0 right-0"
+                style={{ height: '2px', backgroundColor: '#c45c1a' }}
               />
             )}
           </button>
@@ -161,22 +168,25 @@ const PlazaPane = ({ matches, loading }) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-        <span className="text-sm">加载中…</span>
+      <div className="flex flex-col items-center justify-center py-24 gap-4" style={{ color: '#5c5c58' }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#c45c1a' }} />
+        <span className="text-sm uppercase tracking-label font-semibold">加载中…</span>
       </div>
     );
   }
 
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
         <span className="text-5xl">🎱</span>
-        <p className="text-base font-medium text-slate-300">暂无活动对局</p>
-        <p className="text-sm text-slate-500 text-center px-8">周边暂时没有人发起对局，成为第一个发起者吧！</p>
+        <p className="text-sm font-bold uppercase tracking-industrial" style={{ color: '#e8e8e4' }}>暂无活动对局</p>
+        <p className="text-sm text-center px-8" style={{ color: '#5c5c58' }}>周边暂时没有人发起对局，成为第一个发起者吧！</p>
         <button
           onClick={() => navigate('/create-match')}
-          className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-colors"
+          className="mt-2 text-sm font-bold uppercase tracking-industrial py-3 px-8 transition-colors"
+          style={{ backgroundColor: '#c45c1a', color: '#e8e8e4' }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e07a3a'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#c45c1a'}
         >
           发起对局
         </button>
@@ -185,10 +195,9 @@ const PlazaPane = ({ matches, loading }) => {
   }
 
   return (
-    <div className="p-4 pb-6 space-y-4">
+    <div className="p-4 pb-6 space-y-3">
       {matches.map((match, idx) => {
         const inviterRating = match.inviterRating ?? match.rating ?? match.player_a_rating
-        const rankInfo = typeof inviterRating === 'number' ? getRankInfo(inviterRating) : null
         const EXPIRE_MS = 15 * 60 * 1000
         const createdAt = match.created_at ? new Date(match.created_at).getTime() : null
         const secondsLeft = createdAt
@@ -197,7 +206,7 @@ const PlazaPane = ({ matches, loading }) => {
         return (
           <div key={match.id ?? idx}>
             {match.distanceMeters !== undefined && (
-              <p className="text-xs text-slate-500 mb-1 pl-1">
+              <p className="text-[11px] font-semibold uppercase tracking-label mb-1 pl-1" style={{ color: '#5c5c58' }}>
                 📍 {match.distanceMeters < 1000
                   ? `${match.distanceMeters}m`
                   : `${(match.distanceMeters / 1000).toFixed(1)}km`}
@@ -205,7 +214,14 @@ const PlazaPane = ({ matches, loading }) => {
             )}
             {match.isOwn && (
               <div className="flex items-center justify-between mb-1 pl-1 pr-1">
-                <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                <span
+                  className="text-[11px] font-bold uppercase tracking-label px-2 py-0.5"
+                  style={{
+                    backgroundColor: '#7a3a0f',
+                    border: '1px solid #c45c1a',
+                    color: '#e07a3a',
+                  }}
+                >
                   ✦ 我发起
                 </span>
                 <CancelMatchButton matchId={match.id ?? match.match_id} />
