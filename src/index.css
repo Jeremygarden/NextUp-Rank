@@ -1,9 +1,77 @@
+/* Import IBM Plex Sans & Mono from Google Fonts — must be before @tailwind */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-slate-950 text-slate-50;
-  margin: 0;
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+@layer base {
+  body {
+    background-color: #0a0a0a;
+    color: #e8e8e4;
+    font-family: 'IBM Plex Sans', 'DIN Next', 'D-DIN', system-ui, -apple-system, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Remove all border-radius from interactive elements — industrial sharp corners */
+  button, input, select, textarea {
+    border-radius: 0 !important;
+  }
+
+  /* Focus ring: rust orange glow — accessibility */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #c45c1a;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+}
+
+@layer components {
+  /* Industrial button base */
+  .btn-primary {
+    @apply bg-rust text-ink-primary px-5 py-2.5 text-xs font-semibold uppercase tracking-industrial transition-colors;
+    border-radius: 0;
+    &:hover { background-color: #e07a3a; }
+    &:active { background-color: #7a3a0f; }
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-ink-primary border border-forge-concrete px-5 py-2.5 text-xs font-semibold uppercase tracking-industrial transition-colors;
+    border-radius: 0;
+    &:hover { border-color: #5c5c58; }
+  }
+
+  /* Metro tile card */
+  .tile-card {
+    @apply bg-forge-dark border border-forge-cinder p-5;
+    border-radius: 0;
+  }
+
+  /* Industrial badge */
+  .badge {
+    @apply bg-forge-cinder border border-forge-concrete text-ink-secondary text-[11px] font-semibold uppercase tracking-label px-2 py-0.5;
+    border-radius: 0;
+  }
+
+  .badge-active {
+    @apply bg-rust-dim border border-rust text-rust-light text-[11px] font-semibold uppercase tracking-label px-2 py-0.5;
+    border-radius: 0;
+  }
+
+  /* Mono data display */
+  .data-value {
+    @apply font-mono text-ink-primary font-medium;
+  }
+
+  .data-label {
+    @apply text-[11px] uppercase font-semibold tracking-label text-ink-secondary;
+  }
 }
