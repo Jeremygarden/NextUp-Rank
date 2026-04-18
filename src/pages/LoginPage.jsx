@@ -36,17 +36,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-xl">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-black tracking-tight mb-1">
-            <span className="text-white">NextUp-</span><span className="text-indigo-400">Rank</span>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="w-full max-w-sm" style={{ backgroundColor: '#141414', border: '1px solid #1e1e1e' }}>
+        {/* Brand header */}
+        <div className="px-8 pt-8 pb-6" style={{ borderBottom: '1px solid #1e1e1e' }}>
+          <h1
+            className="text-2xl font-black uppercase tracking-industrial mb-1"
+            style={{ color: '#e8e8e4' }}
+          >
+            NEXTUP<span style={{ color: '#c45c1a' }}>-RANK</span>
           </h1>
-          <p className="text-slate-500 text-xs tracking-wide">台球实时积分系统</p>
+          <p className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#5c5c58' }}>
+            台球实时积分系统
+          </p>
         </div>
-        <form onSubmit={handleSignIn} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="account" className="text-slate-400 text-xs font-medium">手机号或邮箱</label>
+
+        <form onSubmit={handleSignIn} className="flex flex-col gap-4 p-8">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="account" className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#9e9e99' }}>
+              手机号或邮箱
+            </label>
             <input
               id="account"
               type="text"
@@ -55,11 +64,20 @@ export default function LoginPage() {
               value={account}
               onChange={e => setAccount(e.target.value)}
               required
-              className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-3 text-sm outline-none transition-colors"
+              style={{
+                backgroundColor: '#0a0a0a',
+                border: '1px solid #2a2a2a',
+                color: '#e8e8e4',
+              }}
+              onFocus={e => e.target.style.borderColor = '#c45c1a'}
+              onBlur={e => e.target.style.borderColor = '#2a2a2a'}
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="password" className="text-slate-400 text-xs font-medium">密码</label>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#9e9e99' }}>
+              密码
+            </label>
             <input
               id="password"
               type="password"
@@ -67,22 +85,42 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-3 text-sm outline-none transition-colors"
+              style={{
+                backgroundColor: '#0a0a0a',
+                border: '1px solid #2a2a2a',
+                color: '#e8e8e4',
+              }}
+              onFocus={e => e.target.style.borderColor = '#c45c1a'}
+              onBlur={e => e.target.style.borderColor = '#2a2a2a'}
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && (
+            <p className="text-xs font-semibold uppercase tracking-label px-3 py-2" style={{ color: '#8b3a3a', border: '1px solid #8b3a3a', backgroundColor: '#8b3a3a22' }}>
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50 shadow-lg shadow-indigo-500/30"
+            className="py-3 text-sm font-bold uppercase tracking-industrial transition-colors disabled:opacity-50 mt-1"
+            style={{ backgroundColor: '#c45c1a', color: '#e8e8e4' }}
+            onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#e07a3a' }}
+            onMouseLeave={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#c45c1a' }}
           >
             {loading ? '登录中...' : '登录'}
           </button>
         </form>
-        <p className="text-slate-400 text-sm text-center mt-4">
+
+        <div
+          className="px-8 py-4 text-center text-sm"
+          style={{ borderTop: '1px solid #1e1e1e', color: '#5c5c58' }}
+        >
           没有账号？{' '}
-          <Link to="/register" className="text-indigo-400 hover:underline">注册</Link>
-        </p>
+          <Link to="/register" className="font-semibold transition-colors" style={{ color: '#c45c1a' }}>
+            注册
+          </Link>
+        </div>
       </div>
     </div>
   )
