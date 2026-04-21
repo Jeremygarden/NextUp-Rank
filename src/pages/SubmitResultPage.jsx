@@ -47,7 +47,7 @@ function AbandonModal({ onConfirm, onCancel, loading }) {
 function Counter({ label, value, onChange }) {
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="text-slate-400 text-sm font-medium">{label}</p>
+      <p className="text-slate-300 text-sm font-medium">{label}</p>
       <div className="flex items-center gap-4">
         <button
           onClick={() => onChange(Math.max(0, value - 1))}

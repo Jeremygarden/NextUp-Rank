@@ -243,7 +243,7 @@ export default function ProfilePage() {
 
             {/* Rating — v3+v2 hybrid: warm card + big mono number */}
             <div className="bg-slate-900/60 border border-slate-800/60 rounded-3xl px-6 py-5 mb-6 shadow-lg">
-              <p className="text-slate-400 text-xs font-medium mb-3">当前积分</p>
+              <p className="text-slate-300 text-xs font-medium mb-3">当前积分</p>
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-2">
                   {(() => {
