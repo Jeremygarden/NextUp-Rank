@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown } from 'lucide-react'
+import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown, AlertTriangle, ClipboardList, Lightbulb } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import ShareCardButton from '../ui/ShareCardButton'
 
@@ -14,7 +14,7 @@ function AbandonModal({ onConfirm, onCancel, loading }) {
         className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full"
       >
         <div className="text-center mb-6">
-          <span className="text-4xl mb-3 block">⚠️</span>
+          <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
           <h3 className="text-lg font-bold mb-2">确认退出比赛？</h3>
           <p className="text-slate-400 text-sm leading-relaxed">
             中途退赛将终止当前对局，双方比赛记录将被取消。
@@ -338,7 +338,7 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, subm
   return (
     <motion.div key="confirm-score" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-sm">
       <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-6">
-        <span className="text-xl">📋</span>
+        <ClipboardList size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
         <p className="text-slate-300 text-sm leading-relaxed">
           请核对对手提交的比分，确认无误后完成结算
         </p>
@@ -376,7 +376,7 @@ function ConfirmScore({ matchId, racksWonBySubmitter, racksLostBySubmitter, subm
         className="w-full border border-slate-700 text-slate-600 font-bold py-3 rounded-2xl cursor-not-allowed"
         title="功能开发中"
       >
-        ⚠️ 比分有误，提出争议
+        <AlertTriangle size={16} className="inline mr-1" /> 比分有误，提出争议
       </button>
       <p className="text-slate-600 text-xs text-center mt-2">争议功能开发中</p>
     </motion.div>
@@ -636,7 +636,7 @@ export default function SubmitResultPage() {
             {phase === 'form' && (
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full max-w-sm">
                 <div className="flex items-start gap-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 mb-6">
-                  <span className="text-xl">💡</span>
+                  <Lightbulb size={20} className="text-indigo-400 flex-shrink-0 mt-0.5" />
                   <p className="text-slate-300 text-sm leading-relaxed">
                     填写比分后提交，等待对手确认后自动结算
                   </p>

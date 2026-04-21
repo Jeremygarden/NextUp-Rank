@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Swords, LogIn, User, AlertTriangle } from 'lucide-react'
+import { Home, Swords, LogIn, User, AlertTriangle, CircleDot } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { motion } from 'framer-motion'
 
@@ -23,13 +23,13 @@ function ActiveMatchModal({ activeMatchId, onContinue, onAbandon, loading }) {
         className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full"
       >
         <div className="text-center mb-6">
-          <span className="text-4xl mb-3 block">🎱</span>
+          <CircleDot size={36} className="text-indigo-400 mx-auto mb-3" />
           <h3 className="text-lg font-bold mb-2">你正在一场球局中</h3>
           <p className="text-slate-400 text-sm leading-relaxed">
             你目前有一场进行中的对局，请先完成当前比赛。
           </p>
           <p className="text-amber-400 text-xs mt-2 font-medium">
-            ⚡ 中途退赛会影响你的信誉度评分（Karma）
+            中途退赛会影响你的信誉度评分（Karma）
           </p>
         </div>
         <div className="flex flex-col gap-3">
