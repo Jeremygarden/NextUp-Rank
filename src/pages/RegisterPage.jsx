@@ -69,10 +69,7 @@ export default function RegisterPage() {
         </div>
         {success ? (
           <div className="text-center">
-            {isPhone
-              ? <p className="text-green-400 font-medium">注册成功！请直接登录 🎱</p>
-              : <p className="text-green-400 font-medium">请查收邮件，确认注册后登录</p>
-            }
+            {!isPhone && <p className="text-green-400 font-medium">请查收邮件，确认注册后登录</p>}
             <Link to="/login" className="mt-4 inline-block text-indigo-400 hover:underline text-sm">
               前往登录 →
             </Link>
