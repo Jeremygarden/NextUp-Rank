@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Swords, LogIn, User } from 'lucide-react'
+import { Home, Swords, LogIn, User, AlertTriangle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { motion } from 'framer-motion'
 
@@ -16,42 +16,33 @@ const GUARDED_PATHS = ['/create-match', '/join']
 
 function ActiveMatchModal({ activeMatchId, onContinue, onAbandon, loading }) {
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        style={{
-          backgroundColor: '#141414',
-          border: '1px solid #2a2a2a',
-          borderRadius: 0,
-        }}
-        className="p-6 max-w-sm w-full"
+        className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full"
       >
         <div className="text-center mb-6">
           <span className="text-4xl mb-3 block">🎱</span>
-          <h3 className="text-base font-bold mb-2 uppercase tracking-industrial text-ink-primary">你正在一场球局中</h3>
-          <p className="text-ink-secondary text-sm leading-relaxed">
+          <h3 className="text-lg font-bold mb-2">你正在一场球局中</h3>
+          <p className="text-slate-400 text-sm leading-relaxed">
             你目前有一场进行中的对局，请先完成当前比赛。
           </p>
-          <p className="text-signal-amber text-xs mt-2 font-semibold uppercase tracking-label" style={{ color: '#7a6020' }}>
+          <p className="text-amber-400 text-xs mt-2 font-medium">
             ⚡ 中途退赛会影响你的信誉度评分（Karma）
           </p>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <button
             onClick={onContinue}
-            className="w-full font-bold py-3 text-sm uppercase tracking-industrial transition-colors text-ink-primary"
-            style={{ backgroundColor: '#c45c1a' }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e07a3a'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#c45c1a'}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-2xl transition-colors"
           >
             返回当前比赛
           </button>
           <button
             onClick={onAbandon}
             disabled={loading}
-            className="w-full font-bold py-3 text-sm uppercase tracking-industrial transition-colors disabled:opacity-40"
-            style={{ border: '1px solid #8b3a3a', color: '#8b3a3a', background: 'transparent' }}
+            className="w-full border border-red-800/60 text-red-400 hover:bg-red-500/10 disabled:opacity-40 font-bold py-3 rounded-2xl transition-colors"
           >
             {loading ? '退出中...' : '放弃当前对局'}
           </button>
@@ -106,6 +97,7 @@ export default function GlobalTabBar() {
   function handleContinue() {
     setShowModal(false)
     setPendingPath(null)
+    // Navigate to the active match's submit page
     if (activeMatch?.id) {
       navigate(`/submit/${activeMatch.id}`)
     }
@@ -138,23 +130,14 @@ export default function GlobalTabBar() {
 
   return (
     <>
-      {/* Industrial bottom nav */}
-      <div
-        className="sticky bottom-0 z-50"
-        style={{ backgroundColor: '#0a0a0a', borderTop: '1px solid #1e1e1e' }}
-      >
+      <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-50">
         {/* Active match banner */}
         {activeMatch && (
           <button
             onClick={() => navigate(`/submit/${activeMatch.id}`)}
-            className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold uppercase tracking-label transition-colors"
-            style={{
-              backgroundColor: '#7a3a0f',
-              borderBottom: '1px solid #c45c1a',
-              color: '#e07a3a',
-            }}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600/20 border-b border-indigo-500/30 text-indigo-400 text-xs font-medium hover:bg-indigo-600/30 transition-colors"
           >
-            <span className="w-2 h-2 animate-pulse" style={{ backgroundColor: '#c45c1a', display: 'inline-block' }} />
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             当前有进行中的对局 — 点击返回
           </button>
         )}
@@ -166,24 +149,19 @@ export default function GlobalTabBar() {
                 key={path}
                 onClick={() => handleTabClick(path)}
                 className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors min-h-[56px] active:opacity-70"
-                style={{ background: 'transparent' }}
               >
                 <Icon
                   aria-hidden="true"
-                  size={20}
-                  style={{ color: active ? '#c45c1a' : '#5c5c58' }}
+                  size={22}
+                  className={active ? 'text-indigo-400' : 'text-slate-500'}
                 />
                 <span
-                  className="text-[10px] font-semibold uppercase tracking-label"
-                  style={{ color: active ? '#c45c1a' : '#5c5c58' }}
+                  className={`text-xs font-medium ${active ? 'text-indigo-400' : 'text-slate-500'}`}
                 >
                   {label}
                 </span>
                 {active && (
-                  <span
-                    className="w-6 mt-0.5"
-                    style={{ height: '2px', backgroundColor: '#c45c1a', display: 'block' }}
-                  />
+                  <span className="w-6 h-0.5 rounded-full bg-indigo-400 mt-0.5" />
                 )}
               </button>
             )
