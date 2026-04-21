@@ -169,7 +169,7 @@ function RankPreviewCard({ initiator, myRating, onContinue }) {
 
       {/* Opponent rank card */}
       <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 mb-4">
-        <p className="text-slate-400 text-xs mb-3 uppercase tracking-widest">对手</p>
+        <p className="text-slate-300 text-xs mb-3 uppercase tracking-widest">对手</p>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-white font-bold text-lg">{initiator.nickname}</p>
@@ -188,7 +188,7 @@ function RankPreviewCard({ initiator, myRating, onContinue }) {
 
         <div className="border-t border-slate-800 mt-4 pt-4 flex items-center justify-between">
           <div>
-            <p className="text-slate-400 text-xs mb-1">我</p>
+            <p className="text-slate-300 text-xs mb-1">我</p>
             <div className="flex items-center gap-1.5">
               <span
                 className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full"

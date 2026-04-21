@@ -148,7 +148,7 @@ export default function GlobalTabBar() {
               <button
                 key={path}
                 onClick={() => handleTabClick(path)}
-                className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors min-h-[56px] active:opacity-70"
+                className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors min-h-[56px] active:opacity-70 rounded-xl mx-0.5 ${active ? 'bg-indigo-500/10' : ''}`}
               >
                 <Icon
                   aria-hidden="true"
