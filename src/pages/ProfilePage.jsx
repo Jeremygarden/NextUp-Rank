@@ -179,7 +179,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   aria-label="上传头像"
-                  className="w-20 h-20 rounded-full bg-indigo-600/30 border-2 border-indigo-500 flex items-center justify-center text-3xl font-black text-indigo-300 overflow-hidden relative"
+                  className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 border-0 flex items-center justify-center text-3xl font-black text-white overflow-hidden relative shadow-lg shadow-indigo-500/20"
                   disabled={avatarUploading}
                 >
                   {avatarUploading ? (
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                   ) : (
                     initials
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
                     <Camera size={20} className="text-white" />
                   </div>
                 </button>
@@ -241,62 +241,59 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Rating — compact */}
-            <div className="bg-slate-900 border border-slate-700 rounded-3xl px-6 py-4 mb-6 flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-xs mb-0.5">当前积分</p>
-                {(() => {
-                  const rank = getRankInfo(profile.rating)
-                  return (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold"
-                        style={{ backgroundColor: rank.color + '33', color: rank.color, border: `1px solid ${rank.color}66` }}>
-                        <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
+            {/* Rating — v3+v2 hybrid: warm card + big mono number */}
+            <div className="bg-slate-900/60 border border-slate-800/60 rounded-3xl px-6 py-5 mb-6 shadow-lg">
+              <p className="text-slate-400 text-xs font-medium mb-3">当前积分</p>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2">
+                  {(() => {
+                    const rank = getRankInfo(profile.rating)
+                    return (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                        style={{ backgroundColor: rank.color + '22', color: rank.color, border: `1px solid ${rank.color}44` }}>
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
                         {rank.label}
                       </div>
+                    )
+                  })()}
+                  {snapshots.length < 8 && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setShowCalibrationTip(t => !t)}
+                        className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full"
+                        aria-label="了解定级赛"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                        定级赛 {snapshots.length}/8
+                      </button>
                     </div>
-                  )
-                })()}
-                {snapshots.length < 8 && (
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className="inline-flex items-center gap-1 bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
-                      定级赛 {snapshots.length}/8
-                    </span>
-                    <button
-                      onClick={() => setShowCalibrationTip(t => !t)}
-                      aria-label="了解定级赛"
-                      className="text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                    </button>
-                  </div>
-                )}
-                {showCalibrationTip && snapshots.length < 8 && (
-                  <p className="text-amber-400/80 text-xs mt-1.5 leading-relaxed">
-                    前 8 场为定级赛，积分波动较大，系统正在校准你的真实水平。
-                  </p>
-                )}
+                  )}
+                  {showCalibrationTip && snapshots.length < 8 && (
+                    <p className="text-amber-400/80 text-xs leading-relaxed max-w-[180px]">
+                      前 8 场积分波动较大，系统正在校准你的真实水平。
+                    </p>
+                  )}
+                </div>
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}
+                  className="text-5xl font-black font-mono text-indigo-400 leading-none"
+                >
+                  {Math.round(profile.rating)}
+                </motion.div>
               </div>
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}
-                className="text-4xl font-black font-mono text-indigo-400"
-              >
-                {Math.round(profile.rating)}
-              </motion.div>
             </div>
 
-            {/* 7-Day Match History — above graph */}
+            {/* 7-Day Match History */}
             <div className="mb-6">
-              <h3 className="text-base font-semibold mb-3 text-slate-300">最近 7 天</h3>
+              <h3 className="text-sm font-semibold mb-3 text-slate-300">最近 7 天</h3>
               <RecentMatchList userId={userId} />
             </div>
 
             {/* Graph */}
             <div className="mb-6">
-              <h3 className="text-base font-semibold mb-3 text-slate-300">积分历史</h3>
+              <h3 className="text-sm font-semibold mb-3 text-slate-300">积分历史</h3>
               {snapshots.length === 0 ? (
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+                <div className="bg-slate-900/60 border border-slate-800/60 rounded-2xl p-6 text-center text-slate-400">
                   <p className="text-sm">暂无比赛记录，积分历史将在首场对局后显示</p>
                 </div>
               ) : (
@@ -307,7 +304,7 @@ export default function ProfilePage() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/60 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-4 mb-2"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/50 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-4 mb-2"
             >
               <LogOut size={16} />
               退出登录
