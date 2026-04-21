@@ -13,49 +13,42 @@ const STATUS = {
 };
 
 const ROLES = {
-  Admin: { label: "管理员" },
-  Player: { label: "球手" },
-  Spectator: { label: "观众" },
+  Admin: { label: "管理员", bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400" },
+  Player: { label: "球手", bg: "bg-indigo-500/10", border: "border-indigo-500/30", text: "text-indigo-400" },
+  Spectator: { label: "观众", bg: "bg-purple-500/10", border: "border-purple-500/30", text: "text-purple-400" },
 };
 
 const GAME_TYPES = {
-  "8ball": { label: "八球" },
-  "9ball": { label: "九球" },
-  "10ball": { label: "十球" },
-  "straight": { label: "直线球" },
-  "default": { label: "自定义" },
+  "8ball": { label: "八球", color: "bg-slate-800", text: "text-slate-100", border: "border-slate-700" },
+  "9ball": { label: "九球", color: "bg-yellow-500/20", text: "text-yellow-400", border: "border-yellow-500/30" },
+  "10ball": { label: "十球", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
+  "straight": { label: "直线球", color: "bg-red-500/20", text: "text-red-400", border: "border-red-500/30" },
+  "default": { label: "自定义", color: "bg-indigo-500/20", text: "text-indigo-400", border: "border-indigo-500/30" },
 };
 
 /**
- * Sub-components
+ * Sub-components for better decoupling
  */
 const RoleBadge = ({ role }) => {
   const r = ROLES[role] || ROLES.Player;
   return (
-    <span
-      className="text-[10px] font-bold uppercase tracking-label px-2 py-0.5"
-      style={{ backgroundColor: '#1e1e1e', border: '1px solid #2a2a2a', color: '#9e9e99' }}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${r.bg} ${r.border} ${r.text}`}>
       {r.label}
     </span>
   );
 };
 
 const CountdownBadge = ({ seconds }) => {
-  const isUrgent = seconds <= 300;
-  const isMid = seconds > 300 && seconds <= 600;
+  const getStyles = (s) => {
+    if (s > 600) return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    if (s > 300) return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+    return "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse";
+  };
 
   const format = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div
-      className={`px-2 py-1 text-[10px] font-mono font-bold flex items-center gap-1.5 uppercase tracking-label ${isUrgent ? 'animate-pulse' : ''}`}
-      style={{
-        border: `1px solid ${isUrgent ? '#8b3a3a' : isMid ? '#7a6020' : '#2a2a2a'}`,
-        color: isUrgent ? '#8b3a3a' : isMid ? '#7a6020' : '#9e9e99',
-        backgroundColor: 'transparent',
-      }}
-    >
+    <div className={`px-2 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 border ${getStyles(seconds)} transition-colors duration-500`}>
       <Clock className="w-3 h-3" />
       {format(seconds)}
     </div>
@@ -81,11 +74,14 @@ const SmartInviteCard = ({
   matchId,
 }) => {
   const [copied, setCopied] = useState(false);
+  // Fix #7: expiresInSeconds <= 0 → immediately expired
   const [timeLeft, setTimeLeft] = useState(() => Math.max(0, expiresInSeconds));
   const [currentStatus, setCurrentStatus] = useState(() =>
     expiresInSeconds <= 0 ? STATUS.EXPIRED : initialStatus
   );
 
+  // Fix #1: timer effect only depends on currentStatus, never on timeLeft
+  // This prevents teardown/recreate every second (memory leak + drift)
   useEffect(() => {
     if (currentStatus !== STATUS.PENDING) return;
     const timer = setInterval(() => {
@@ -94,6 +90,7 @@ const SmartInviteCard = ({
     return () => clearInterval(timer);
   }, [currentStatus]);
 
+  // Fix #1: separate effect to flip status when countdown hits 0
   useEffect(() => {
     if (timeLeft === 0 && currentStatus === STATUS.PENDING) {
       setCurrentStatus(STATUS.EXPIRED);
@@ -111,69 +108,59 @@ const SmartInviteCard = ({
   };
 
   const isExpired = currentStatus === STATUS.EXPIRED || timeLeft <= 0;
-  const gameLabel = isExpired ? "已过期" : (GAME_TYPES[gameType] || GAME_TYPES.default).label;
+  const gameStyle = isExpired 
+    ? { label: "已过期", color: "bg-slate-950/80", text: "text-slate-500", border: "border-slate-800" }
+    : (GAME_TYPES[gameType] || GAME_TYPES.default);
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`overflow-hidden w-full ${isExpired ? "opacity-50" : ""}`}
-      style={{ backgroundColor: '#141414', border: '1px solid #1e1e1e' }}
+      className={`bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl w-full ${isExpired ? "grayscale contrast-75" : ""}`}
     >
-      {/* Header bar */}
-      <div
-        className="px-4 py-3 flex items-center justify-between"
-        style={{ borderBottom: '1px solid #1e1e1e', backgroundColor: '#1e1e1e' }}
-      >
+      {/* Header */}
+      <div className={`p-4 ${gameStyle.color} border-b ${gameStyle.border} flex items-center justify-between`}>
         <div className="flex items-center gap-2">
-          <Target className="w-4 h-4" style={{ color: '#c45c1a' }} />
-          <span className="font-bold uppercase tracking-industrial text-xs" style={{ color: '#e8e8e4' }}>
-            {gameLabel}
+          <Target className={`w-5 h-5 ${gameStyle.text}`} />
+          <span className={`font-bold tracking-wider uppercase text-sm ${gameStyle.text}`}>
+            {gameStyle.label}
           </span>
         </div>
+        
+        {!isExpired && currentStatus === STATUS.PENDING && (
+          <CountdownBadge seconds={timeLeft} />
+        )}
 
-        <div className="flex items-center gap-2">
-          {!isExpired && currentStatus === STATUS.PENDING && (
-            <CountdownBadge seconds={timeLeft} />
-          )}
-          {inviteCode && (
-            <span className="text-[10px] font-mono px-2 py-0.5 uppercase" style={{ color: '#5c5c58', border: '1px solid #2a2a2a' }}>
-              #{inviteCode}
-            </span>
-          )}
-        </div>
+        {inviteCode && (
+          <div className="bg-white/10 px-2 py-1 rounded text-[10px] text-white/60 font-mono">
+            #{inviteCode}
+          </div>
+        )}
       </div>
 
-      <div className="p-4">
+      <div className="p-6">
         {/* Inviter Info */}
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-10 h-10 flex items-center justify-center text-sm font-bold flex-shrink-0"
-            style={{
-              backgroundColor: isExpired ? '#1e1e1e' : '#2a2a2a',
-              border: `1px solid ${isExpired ? '#2a2a2a' : '#c45c1a'}`,
-              color: isExpired ? '#5c5c58' : '#e8e8e4',
-            }}
-          >
+        <div className="flex items-center gap-4 mb-5">
+          <div className={`w-12 h-12 rounded-2xl ${isExpired ? "bg-slate-800" : "bg-gradient-to-br from-indigo-500 to-purple-600"} flex items-center justify-center text-xl shadow-lg text-white flex-shrink-0`}>
             {typeof inviter === 'string' ? inviter[0]?.toUpperCase() : '?'}
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="text-[10px] uppercase tracking-label font-semibold" style={{ color: '#5c5c58' }}>
-                {currentStatus === STATUS.JOINED ? "已匹配" : "发起者"}
+            <div className="flex items-center gap-2">
+              <p className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
+                {currentStatus === STATUS.JOINED ? "已匹配" : "来自"}
               </p>
               <RoleBadge role={role} />
             </div>
-            <h3 className="text-base font-bold" style={{ color: '#e8e8e4' }}>{inviter}</h3>
+            <h3 className="text-xl text-white font-bold">{inviter}</h3>
             {inviterRating !== null && (() => {
               const rank = getRankInfo(inviterRating)
               return (
-                <div className="flex items-center gap-1 mt-0.5">
+                <div className="flex items-center gap-1.5 mt-1">
                   <span
-                    className="w-1.5 h-1.5 inline-block"
-                    style={{ backgroundColor: rank.color }}
-                  />
-                  <span className="text-[11px] font-semibold font-mono" style={{ color: rank.color }}>
+                    className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: rank.color + '22', color: rank.color, border: `1px solid ${rank.color}55` }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
                     {rank.label} · {Math.round(inviterRating)}
                   </span>
                 </div>
@@ -182,16 +169,16 @@ const SmartInviteCard = ({
           </div>
         </div>
 
-        {/* Detail */}
-        <div className="space-y-2 mb-4">
-          <DetailItem icon={<Clock className="w-3.5 h-3.5" style={{ color: '#c45c1a' }} />} text={startTime} />
+        {/* Details Section */}
+        <div className="space-y-3 mb-5">
+          <DetailItem icon={<Clock className="w-4 h-4 text-indigo-400" />} text={startTime} />
           {entryFee && entryFee !== "Free" && (
-            <DetailItem icon={<Trophy className="w-3.5 h-3.5" style={{ color: '#4a7c59' }} />} text={`报名费: ${entryFee}`} />
+            <DetailItem icon={<Trophy className="w-4 h-4 text-emerald-400" />} text={`报名费: ${entryFee}`} />
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {renderActions(currentStatus, handleCopy, copied, onAccept, isExpired)}
         </div>
       </div>
@@ -200,33 +187,27 @@ const SmartInviteCard = ({
 };
 
 /**
- * Helper renderers
+ * Helper renderers for readability
  */
 const DetailItem = ({ icon, text }) => (
-  <div className="flex items-center gap-3 px-3 py-2" style={{ backgroundColor: '#1e1e1e', border: '1px solid #2a2a2a' }}>
+  <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/40 border border-slate-700/50">
     {icon}
-    <span className="text-sm" style={{ color: '#9e9e99' }}>{text}</span>
+    <span className="text-slate-200 text-sm font-medium">{text}</span>
   </div>
 );
 
 const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
   if (status === STATUS.JOINED) {
     return (
-      <div
-        className="w-full py-3 font-bold text-center text-sm uppercase tracking-industrial"
-        style={{ backgroundColor: '#4a7c59', color: '#e8e8e4' }}
-      >
+      <div className="w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-4 rounded-2xl font-bold text-center">
         对局已确认 ✓
       </div>
     );
   }
-
+  
   if (status === STATUS.EXPIRED) {
     return (
-      <div
-        className="w-full py-3 font-bold text-center text-sm uppercase tracking-industrial"
-        style={{ backgroundColor: '#1e1e1e', color: '#5c5c58', border: '1px solid #2a2a2a' }}
-      >
+      <div className="w-full bg-slate-800/50 text-slate-500 border border-slate-700/50 py-4 rounded-2xl font-bold text-center italic">
         邀请已过期
       </div>
     );
@@ -237,34 +218,27 @@ const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
       <button
         onClick={onAccept}
         disabled={!onAccept || isExpired}
-        className="flex-[2] py-3 font-bold transition-colors flex items-center justify-center gap-2 text-sm uppercase tracking-industrial disabled:opacity-40 min-h-[44px]"
-        style={{ backgroundColor: '#c45c1a', color: '#e8e8e4' }}
-        onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#e07a3a' }}
-        onMouseLeave={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#c45c1a' }}
+        className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
       >
         接受 <ChevronRight className="w-4 h-4" />
       </button>
-      <button
-        className="flex-1 py-3 font-bold transition-colors relative group text-sm uppercase tracking-industrial min-h-[44px]"
+      <button 
+        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group min-h-[44px]" 
         onClick={onCopy}
-        style={{ backgroundColor: '#1e1e1e', color: '#9e9e99', border: '1px solid #2a2a2a' }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#2a2a2a'}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#1e1e1e'}
       >
         <div className="flex items-center justify-center gap-2">
           <Copy className="w-4 h-4" /> 复制
         </div>
-
+        
         <AnimatePresence>
           {copied && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: -40 }}
+              animate={{ opacity: 1, y: -45 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute left-1/2 -translate-x-1/2 px-3 py-1 text-xs font-bold flex items-center gap-1"
-              style={{ backgroundColor: '#e8e8e4', color: '#0a0a0a' }}
+              className="absolute left-1/2 -translate-x-1/2 bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-xl flex items-center gap-1"
             >
-              <Check className="w-3 h-3" style={{ color: '#4a7c59' }} /> 已复制
+              <Check className="w-3 h-3 text-emerald-500" /> 已复制
             </motion.div>
           )}
         </AnimatePresence>

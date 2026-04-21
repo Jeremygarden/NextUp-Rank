@@ -3,13 +3,6 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { toFakeEmail, isPhoneInput } from '../lib/phoneAuth'
 
-// Shared input style helpers
-const inputBase = {
-  backgroundColor: '#0a0a0a',
-  border: '1px solid #2a2a2a',
-  color: '#e8e8e4',
-}
-
 export default function RegisterPage() {
   const [nickname, setNickname] = useState('')
   const [account, setAccount] = useState('')
@@ -56,6 +49,7 @@ export default function RegisterPage() {
       return
     }
 
+    // Store phone in users table for display purposes
     if (data?.user && phoneDigits) {
       await supabase.from('users').update({ phone: phoneDigits }).eq('id', data.user.id)
     }
@@ -65,129 +59,89 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="w-full max-w-sm" style={{ backgroundColor: '#141414', border: '1px solid #1e1e1e' }}>
-        {/* Brand header */}
-        <div className="px-8 pt-8 pb-6" style={{ borderBottom: '1px solid #1e1e1e' }}>
-          <h1
-            className="text-2xl font-black uppercase tracking-industrial mb-1"
-            style={{ color: '#e8e8e4' }}
-          >
-            NEXTUP<span style={{ color: '#c45c1a' }}>-RANK</span>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-slate-900 rounded-2xl p-8 shadow-xl">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-black tracking-tight mb-1">
+            <span className="text-white">NextUp-</span><span className="text-indigo-400">Rank</span>
           </h1>
-          <p className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#5c5c58' }}>
-            创建账号
-          </p>
+          <p className="text-slate-500 text-xs tracking-wide">创建账号</p>
         </div>
-
-        <div className="p-8">
-          {success ? (
-            <div className="text-center py-4">
-              {!isPhone && <p className="font-semibold" style={{ color: '#4a7c59' }}>请查收邮件，确认注册后登录</p>}
-              <Link to="/login" className="mt-4 inline-block text-sm font-semibold uppercase tracking-label" style={{ color: '#c45c1a' }}>
-                前往登录 →
-              </Link>
+        {success ? (
+          <div className="text-center">
+            {!isPhone && <p className="text-green-400 font-medium">请查收邮件，确认注册后登录</p>}
+            <Link to="/login" className="mt-4 inline-block text-indigo-400 hover:underline text-sm">
+              前往登录 →
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleSignUp} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="nickname" className="text-slate-400 text-xs font-medium">昵称</label>
+              <input
+                id="nickname"
+                type="text"
+                placeholder="球桌上叫你什么？"
+                value={nickname}
+                onChange={e => setNickname(e.target.value)}
+                required
+                className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSignUp} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="nickname" className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#9e9e99' }}>
-                  昵称
-                </label>
-                <input
-                  id="nickname"
-                  type="text"
-                  placeholder="球桌上叫你什么？"
-                  value={nickname}
-                  onChange={e => setNickname(e.target.value)}
-                  required
-                  className="px-4 py-3 text-sm outline-none transition-colors"
-                  style={inputBase}
-                  onFocus={e => e.target.style.borderColor = '#c45c1a'}
-                  onBlur={e => e.target.style.borderColor = '#2a2a2a'}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="account" className="text-[11px] uppercase tracking-label font-semibold flex items-center gap-2" style={{ color: '#9e9e99' }}>
-                  手机号或邮箱
-                  {isPhone && <span className="font-bold" style={{ color: '#c45c1a' }}>📱 手机号</span>}
-                </label>
-                <input
-                  id="account"
-                  type="text"
-                  inputMode="tel"
-                  placeholder="手机号 或 you@email.com"
-                  value={account}
-                  onChange={e => setAccount(e.target.value)}
-                  required
-                  className="px-4 py-3 text-sm outline-none transition-colors"
-                  style={inputBase}
-                  onFocus={e => e.target.style.borderColor = '#c45c1a'}
-                  onBlur={e => e.target.style.borderColor = '#2a2a2a'}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="password" className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#9e9e99' }}>
-                  密码（至少 6 位）
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="请设置密码"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="px-4 py-3 text-sm outline-none transition-colors"
-                  style={inputBase}
-                  onFocus={e => e.target.style.borderColor = '#c45c1a'}
-                  onBlur={e => e.target.style.borderColor = '#2a2a2a'}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="confirm" className="text-[11px] uppercase tracking-label font-semibold" style={{ color: '#9e9e99' }}>
-                  确认密码
-                </label>
-                <input
-                  id="confirm"
-                  type="password"
-                  placeholder="再输一遍"
-                  value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
-                  required
-                  className="px-4 py-3 text-sm outline-none transition-colors"
-                  style={inputBase}
-                  onFocus={e => e.target.style.borderColor = '#c45c1a'}
-                  onBlur={e => e.target.style.borderColor = '#2a2a2a'}
-                />
-              </div>
-              {error && (
-                <p className="text-xs font-semibold uppercase tracking-label px-3 py-2" style={{ color: '#8b3a3a', border: '1px solid #8b3a3a', backgroundColor: '#8b3a3a22' }}>
-                  {error}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="py-3 text-sm font-bold uppercase tracking-industrial transition-colors disabled:opacity-50 mt-1"
-                style={{ backgroundColor: '#c45c1a', color: '#e8e8e4' }}
-                onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#e07a3a' }}
-                onMouseLeave={e => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#c45c1a' }}
-              >
-                {loading ? '创建中...' : '创建账号'}
-              </button>
-            </form>
-          )}
-        </div>
-
-        <div
-          className="px-8 py-4 text-center text-sm"
-          style={{ borderTop: '1px solid #1e1e1e', color: '#5c5c58' }}
-        >
+            <div className="flex flex-col gap-1">
+              <label htmlFor="account" className="text-slate-400 text-xs font-medium">
+                手机号或邮箱
+                {isPhone && <span className="ml-2 text-indigo-400 text-xs">📱 手机号</span>}
+              </label>
+              <input
+                id="account"
+                type="text"
+                inputMode="tel"
+                placeholder="手机号 或 you@email.com"
+                value={account}
+                onChange={e => setAccount(e.target.value)}
+                required
+                className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="password" className="text-slate-400 text-xs font-medium">密码（至少 6 位）</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="请设置密码"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="confirm" className="text-slate-400 text-xs font-medium">确认密码</label>
+              <input
+                id="confirm"
+                type="password"
+                placeholder="再输一遍"
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                required
+                className="bg-slate-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg py-3 transition disabled:opacity-50 shadow-lg shadow-indigo-500/30"
+            >
+              {loading ? '创建中...' : '创建账号'}
+            </button>
+          </form>
+        )}
+        <p className="text-slate-400 text-sm text-center mt-4">
           已有账号？{' '}
-          <Link to="/login" className="font-semibold transition-colors" style={{ color: '#c45c1a' }}>
-            登录
-          </Link>
-        </div>
+          <Link to="/login" className="text-indigo-400 hover:underline">登录</Link>
+        </p>
       </div>
     </div>
   )
