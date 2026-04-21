@@ -83,10 +83,7 @@ export default function RegisterPage() {
         <div className="p-8">
           {success ? (
             <div className="text-center py-4">
-              {isPhone
-                ? <p className="font-semibold" style={{ color: '#4a7c59' }}>注册成功！请直接登录 🎱</p>
-                : <p className="font-semibold" style={{ color: '#4a7c59' }}>请查收邮件，确认注册后登录</p>
-              }
+              {!isPhone && <p className="font-semibold" style={{ color: '#4a7c59' }}>请查收邮件，确认注册后登录</p>}
               <Link to="/login" className="mt-4 inline-block text-sm font-semibold uppercase tracking-label" style={{ color: '#c45c1a' }}>
                 前往登录 →
               </Link>
