@@ -2,6 +2,8 @@ import React from "react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
 import useLeaderboard from "../hooks/useLeaderboard";
 import { getRankInfo } from "../lib/rankColor";
+import { supabase } from "../lib/supabaseClient";
+import { useEffect, useState } from "react";
 
 /**
  * NextUp-Rank: VenueLeaderboard
@@ -82,10 +84,19 @@ const mapApiToPlayers = (apiData) =>
     recent_25_snapshots: item.recent_25_snapshots ?? [],
   }));
 
-const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
+const VenueLeaderboard = ({ venueId, venueName, players: playersProp, currentUserId: currentUserIdProp }) => {
   // Self-fetch when venueId is provided and no players prop given
   const shouldSelfFetch = venueId != null && playersProp == null;
   const { data: fetchedData, loading: fetchLoading } = useLeaderboard(shouldSelfFetch ? venueId : undefined);
+
+  // Resolve current user id
+  const [currentUserId, setCurrentUserId] = useState(currentUserIdProp ?? null);
+  useEffect(() => {
+    if (currentUserIdProp) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+  }, [currentUserIdProp]);
 
   const players = shouldSelfFetch
     ? mapApiToPlayers(fetchedData)
@@ -134,6 +145,7 @@ const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
         <ul className="divide-y divide-slate-800/60">
           {players.map((player, idx) => {
             const rank = idx + 1;
+            const isMe = currentUserId && player.id === currentUserId;
             const rankStyle =
               rank === 1
                 ? "text-amber-400 font-black"
@@ -146,19 +158,30 @@ const VenueLeaderboard = ({ venueId, venueName, players: playersProp }) => {
             return (
               <li
                 key={player.id ?? idx}
-                className="grid grid-cols-[2rem_1fr_5rem_4rem_4rem] gap-2 items-center px-4 py-3 hover:bg-slate-800/40 transition-colors"
+                className={`relative grid grid-cols-[2rem_1fr_5rem_4rem_4rem] gap-2 items-center px-4 py-3 transition-colors
+                  ${isMe ? "bg-indigo-500/8" : "hover:bg-slate-800/40"}`}
               >
+                {/* Current-user accent bar */}
+                {isMe && (
+                  <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500 rounded-r" />
+                )}
                 {/* Rank */}
                 <span className={`text-sm ${rankStyle}`}>{rank}</span>
 
                 {/* Nickname */}
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0
+                    ${isMe ? "bg-gradient-to-br from-indigo-400 to-indigo-600 ring-2 ring-indigo-500/40" : "bg-gradient-to-br from-indigo-500 to-purple-600"}`}>
                     {(player.nickname ?? "?")[0]}
                   </div>
-                  <span className="text-slate-200 text-sm font-medium truncate">
+                  <span className={`text-sm font-medium truncate ${isMe ? "text-indigo-200 font-bold" : "text-slate-200"}`}>
                     {player.nickname ?? "—"}
                   </span>
+                  {isMe && (
+                    <span className="flex-shrink-0 text-[10px] font-bold text-indigo-400 border border-indigo-500/40 bg-indigo-500/10 rounded-full px-1.5 py-0.5 leading-none">
+                      你
+                    </span>
+                  )}
                 </div>
 
                 {/* Rating */}
