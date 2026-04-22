@@ -1,9 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { Loader2, ChevronLeft, Plus, Minus, TrendingUp, TrendingDown, AlertTriangle, ClipboardList, Lightbulb } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import ShareCardButton from '../ui/ShareCardButton'
+
+// Animated counter — counts up/down to target value
+function AnimatedNumber({ value, className, prefix = '', suffix = '', duration = 1.2 }) {
+  const motionVal = useMotionValue(value > 0 ? 0 : value)
+  const rounded = useTransform(motionVal, (v) => `${prefix}${v >= 0 && prefix === '+' ? '+' : ''}${Math.round(v)}${suffix}`)
+  const [display, setDisplay] = useState(`${prefix}${Math.round(value)}${suffix}`)
+
+  useEffect(() => {
+    const controls = animate(motionVal, value, {
+      duration,
+      ease: 'easeOut',
+      onUpdate: (v) => {
+        const rounded = Math.round(v)
+        setDisplay(`${prefix}${rounded}${suffix}`)
+      },
+    })
+    return controls.stop
+  }, [value])
+
+  return <span className={className}>{display}</span>
+}
 
 function AbandonModal({ onConfirm, onCancel, loading }) {
   return (
@@ -73,7 +94,6 @@ function Counter({ label, value, onChange }) {
 function SettlementResult({ result, navigate, myNickname, opponentNickname, racksWon, racksLost, totalMatches }) {
   const delta = result ? (result.rating_after - result.rating_before) : 0
   const isWin = racksWon > racksLost
-  // totalMatches is the count AFTER this match settled; calibration covers first 8 matches
   const isCalibrating = totalMatches !== null && totalMatches <= 8
 
   useEffect(() => {
@@ -82,41 +102,67 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
   }, [navigate])
 
   return (
-    <motion.div key="settlement" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-sm">
-      <motion.div
-        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1, type: 'spring' }}
-        className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${delta >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}
-      >
-        {delta >= 0
-          ? <TrendingUp className="text-green-400" size={40} />
-          : <TrendingDown className="text-red-400" size={40} />
-        }
-      </motion.div>
-      <h2 className="text-2xl font-bold mb-2">比赛结算完成</h2>
-      <p className="text-slate-400 text-sm mb-6">结算已完成</p>
-      <div className="bg-slate-900 border border-slate-700 rounded-3xl p-8 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-slate-400">积分变化</span>
-          <motion.span
-            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-            className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-green-400' : 'text-red-400'}`}
-          >
-            {delta >= 0 ? '+' : ''}{Math.round(delta)}
-          </motion.span>
+    <motion.div key="settlement" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-sm">
+
+      {/* Glow orb + win/loss label */}
+      <div className="relative flex flex-col items-center mb-8">
+        {/* Background glow */}
+        <div className={`absolute w-40 h-40 rounded-full blur-3xl opacity-25 pointer-events-none -z-10
+          ${isWin ? "bg-indigo-500" : "bg-red-500"}`} />
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 18 }}
+          className={`w-24 h-24 rounded-full flex items-center justify-center mb-4
+            ${isWin
+              ? "bg-gradient-to-br from-indigo-500/30 to-purple-600/20 ring-2 ring-indigo-500/40"
+              : "bg-gradient-to-br from-red-500/25 to-red-700/15 ring-2 ring-red-500/30"}`}
+        >
+          {isWin
+            ? <TrendingUp className="text-indigo-300" size={44} />
+            : <TrendingDown className="text-red-400" size={44} />}
+        </motion.div>
+        <motion.h2
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          className={`text-4xl font-black tracking-tight font-mono
+            ${isWin ? "text-indigo-300" : "text-red-400"}`}
+        >
+          {isWin ? "WIN" : "LOSS"}
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+          className="text-slate-500 text-sm mt-1"
+        >
+          {racksWon} : {racksLost}
+        </motion.p>
+      </div>
+
+      {/* Rating card */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 mb-6">
+        <div className="flex justify-between items-center mb-5">
+          <span className="text-slate-400 text-sm">积分变化</span>
+          <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+            <AnimatedNumber
+              value={delta}
+              prefix={delta >= 0 ? '+' : ''}
+              className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+              duration={1.0}
+            />
+          </motion.div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-slate-400">新积分</span>
-          <motion.span
-            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-            className="text-3xl font-black font-mono text-indigo-400"
-          >
-            {Math.round(result.rating_after)}
-          </motion.span>
+          <span className="text-slate-400 text-sm">新积分</span>
+          <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+            <AnimatedNumber
+              value={Math.round(result.rating_after)}
+              className="text-3xl font-black font-mono text-indigo-300"
+              duration={1.4}
+            />
+          </motion.div>
         </div>
         {isCalibrating && (
           <motion.div
-            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-            className="mt-4 flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 text-left"
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
+            className="mt-5 flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 text-left"
           >
             <span className="text-amber-400 mt-0.5 shrink-0">⚡</span>
             <div>
@@ -130,6 +176,7 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
           </motion.div>
         )}
       </div>
+
       <ShareCardButton
         myNickname={myNickname || '我'}
         opponentNickname={opponentNickname || '对手'}
@@ -139,7 +186,7 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
         racksLost={racksLost ?? 0}
         isWin={isWin}
       />
-      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors mt-3">
+      <button onClick={() => navigate('/')} className="btn-secondary mt-3">
         返回广场
       </button>
       <p className="text-slate-500 text-xs mt-3 text-center">8 秒后自动跳转...</p>
