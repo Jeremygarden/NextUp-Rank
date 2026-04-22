@@ -33,7 +33,7 @@ function AbandonModal({ onConfirm, onCancel, loading }) {
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white font-bold py-3 rounded-full transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="animate-spin" size={16} /> : null}
             确认退出
@@ -232,7 +232,7 @@ function PendingConfirmation({ matchId, navigate, onConfirmed, myRatingBefore })
           <span className="text-amber-400 font-medium">等待对手确认</span>
         </div>
       </div>
-      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-full transition-colors">
         返回广场
       </button>
     </motion.div>
@@ -662,7 +662,7 @@ export default function SubmitResultPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitLoading || (racksWon === 0 && racksLost === 0)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-lg"
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-4 rounded-full transition-colors flex items-center justify-center gap-2 text-lg"
                 >
                   {submitLoading ? <><Loader2 className="animate-spin" size={20} />提交中...</> : '确认提交'}
                 </button>

@@ -2,8 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Design System — v3+v2 Hybrid
+   v3: warm cards, pill buttons, rounded surfaces
+   v2: mono data, indigo accent authority
+   ============================================================ */
+:root {
+  /* Accent */
+  --accent: #4f46e5;          /* indigo-600 */
+  --accent-light: #818cf8;    /* indigo-400 */
+  --accent-hover: #6366f1;    /* indigo-500 */
+  --accent-glow: rgba(79, 70, 229, 0.15);
+
+  /* Surfaces */
+  --bg-base: #020617;         /* slate-950 */
+  --bg-card: #0f172a;         /* slate-900 */
+  --bg-input: #1e293b;        /* slate-800 */
+  --border: rgba(148, 163, 184, 0.12); /* slate-400/12 */
+
+  /* Text */
+  --text-primary: #f1f5f9;    /* slate-100 */
+  --text-secondary: #cbd5e1;  /* slate-300 */
+  --text-muted: #94a3b8;      /* slate-400 */
+  --text-subtle: #64748b;     /* slate-500 */
+
+  /* Radius */
+  --radius-btn: 9999px;       /* pill — rounded-full */
+  --radius-card: 1.5rem;      /* 24px — rounded-3xl */
+  --radius-input: 0.75rem;    /* 12px — rounded-xl */
+  --radius-badge: 9999px;     /* pill */
+}
+
 body {
   @apply bg-slate-950 text-slate-50;
   margin: 0;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+/* ── Global CTA Button ──────────────────────────────────────── */
+@layer components {
+  .btn-primary {
+    @apply w-full bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98]
+           text-white font-bold py-3.5 transition-all
+           disabled:opacity-50 flex items-center justify-center gap-2;
+    border-radius: var(--radius-btn);
+  }
+
+  .btn-secondary {
+    @apply w-full border border-slate-600 hover:border-slate-400
+           text-slate-300 font-bold py-3.5 transition-all
+           flex items-center justify-center gap-2;
+    border-radius: var(--radius-btn);
+  }
+
+  .btn-danger {
+    @apply w-full bg-red-600 hover:bg-red-500 active:scale-[0.98]
+           text-white font-bold py-3.5 transition-all
+           disabled:opacity-50 flex items-center justify-center gap-2;
+    border-radius: var(--radius-btn);
+  }
 }

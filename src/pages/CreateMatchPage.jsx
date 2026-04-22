@@ -117,13 +117,13 @@ function LBSPreCheck({ selectedVenueId, venues, onPass, onBack }) {
               <div className="flex flex-col gap-3 w-full mt-2">
                 <button
                   onClick={onPass}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors"
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-full transition-colors"
                 >
                   继续
                 </button>
                 <button
                   onClick={onBack}
-                  className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-xl transition-colors"
+                  className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-full transition-colors"
                 >
                   返回选球房
                 </button>
@@ -142,7 +142,7 @@ function LBSPreCheck({ selectedVenueId, venues, onPass, onBack }) {
               </div>
               <button
                 onClick={onPass}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors mt-2"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-full transition-colors mt-2"
               >
                 继续
               </button>
@@ -277,7 +277,7 @@ function RealtimeWaiting({ result, navigate }) {
         />
       </div>
 
-      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-2xl transition-colors">
+      <button onClick={() => navigate('/')} className="w-full border border-slate-600 hover:border-slate-400 text-slate-300 font-bold py-3 rounded-full transition-colors">
         返回广场
       </button>
     </motion.div>
@@ -388,7 +388,7 @@ export default function CreateMatchPage() {
               ) : venues.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-slate-400 mb-6">暂无球房数据</p>
-                  <button onClick={() => { setSelectedVenue(null); setStep(3) }} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl transition-colors">
+                  <button onClick={() => { setSelectedVenue(null); setStep(3) }} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-full transition-colors">
                     跳过，直接创建
                   </button>
                 </div>
@@ -445,7 +445,7 @@ export default function CreateMatchPage() {
               <button
                 onClick={handleConfirm}
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-lg"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-4 rounded-full transition-colors flex items-center justify-center gap-2 text-lg"
               >
                 {loading ? <><Loader2 className="animate-spin" size={20} />创建中...</> : '确认发起对局'}
               </button>

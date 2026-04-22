@@ -131,7 +131,7 @@ export default function JoinMatchPage() {
             <button
               onClick={handleJoin}
               disabled={code.length !== 6 || loading}
-              className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-4 rounded-2xl transition-colors flex items-center justify-center gap-2 text-lg"
+              className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-4 rounded-full transition-colors flex items-center justify-center gap-2 text-lg"
             >
               {loading ? <><Loader2 className="animate-spin" size={20} />加入中...</> : '加入对局'}
             </button>
@@ -211,7 +211,7 @@ function RankPreviewCard({ initiator, myRating, onContinue }) {
 
       <button
         onClick={onContinue}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-2xl transition-colors text-lg"
+        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-full transition-colors text-lg"
       >
         开始对局 →
       </button>
