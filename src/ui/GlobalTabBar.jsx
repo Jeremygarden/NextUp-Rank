@@ -35,14 +35,14 @@ function ActiveMatchModal({ activeMatchId, onContinue, onAbandon, loading }) {
         <div className="flex flex-col gap-3">
           <button
             onClick={onContinue}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-2xl transition-colors"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-full transition-colors"
           >
             返回当前比赛
           </button>
           <button
             onClick={onAbandon}
             disabled={loading}
-            className="w-full border border-red-800/60 text-red-400 hover:bg-red-500/10 disabled:opacity-40 font-bold py-3 rounded-2xl transition-colors"
+            className="w-full border border-red-800/60 text-red-400 hover:bg-red-500/10 disabled:opacity-40 font-bold py-3 rounded-full transition-colors"
           >
             {loading ? '退出中...' : '放弃当前对局'}
           </button>

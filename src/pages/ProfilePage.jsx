@@ -304,7 +304,7 @@ export default function ProfilePage() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-800/50 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-4 mb-2"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full border border-red-800/50 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium mt-4 mb-2"
             >
               <LogOut size={16} />
               退出登录

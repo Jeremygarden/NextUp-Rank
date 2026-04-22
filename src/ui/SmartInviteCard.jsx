@@ -218,12 +218,12 @@ const renderActions = (status, onCopy, copied, onAccept, isExpired) => {
       <button
         onClick={onAccept}
         disabled={!onAccept || isExpired}
-        className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
+        className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 min-h-[44px]"
       >
         接受 <ChevronRight className="w-4 h-4" />
       </button>
       <button 
-        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-2xl font-bold transition-all active:scale-95 relative group min-h-[44px]" 
+        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 rounded-full font-bold transition-all active:scale-95 relative group min-h-[44px]" 
         onClick={onCopy}
       >
         <div className="flex items-center justify-center gap-2">

@@ -66,7 +66,7 @@ export default function ShareCardButton({ myNickname, opponentNickname, ratingBe
       <button
         onClick={handleShare}
         disabled={loading}
-        className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2"
+        className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold py-3 rounded-full transition-colors flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
