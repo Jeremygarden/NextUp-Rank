@@ -183,7 +183,7 @@ function RankPreviewCard({ initiator, myRating, onContinue }) {
               </span>
             </div>
           </div>
-          <span className="text-3xl font-black font-mono text-slate-300">{Math.round(initiator.rating)}</span>
+          {/* 积分盲盒：对局前隐藏对手具体积分，只显示段位 */}
         </div>
 
         <div className="border-t border-slate-800 mt-4 pt-4 flex items-center justify-between">
