@@ -96,10 +96,22 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
   const isWin = racksWon > racksLost
   const isCalibrating = totalMatches !== null && totalMatches <= 8
 
+  // 积分揭示状态：先显示 ???，再逐步揭示
+  const [revealed, setRevealed] = useState(false)
+  const [revealedNew, setRevealedNew] = useState(false)
+
   useEffect(() => {
     const timer = setTimeout(() => navigate('/'), 8000)
     return () => clearTimeout(timer)
   }, [navigate])
+
+  useEffect(() => {
+    // 1.5 秒后揭示「积分变化」
+    const t1 = setTimeout(() => setRevealed(true), 1500)
+    // 1.8 秒后揭示「新积分」
+    const t2 = setTimeout(() => setRevealedNew(true), 1800)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
 
   return (
     <motion.div key="settlement" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-sm">
@@ -139,24 +151,63 @@ function SettlementResult({ result, navigate, myNickname, opponentNickname, rack
       {/* Rating card */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 mb-6">
         <div className="flex justify-between items-center mb-5">
-          <span className="text-slate-400 text-sm">积分变化</span>
+          {/* 揭示前显示「积分揭示」文案 + 闪烁提示，揭示后恢复正常 */}
+          <span className="text-slate-400 text-sm">
+            {revealed ? '积分变化' : <span className="animate-pulse">积分揭示中…</span>}
+          </span>
           <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
-            <AnimatedNumber
-              value={delta}
-              prefix={delta >= 0 ? '+' : ''}
-              className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
-              duration={1.0}
-            />
+            {revealed ? (
+              // 揭示动效：scale 弹出
+              <motion.div
+                key="delta-revealed"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: [0.8, 1.1, 1], opacity: 1 }}
+                transition={{ duration: 0.4, times: [0, 0.6, 1] }}
+              >
+                <AnimatedNumber
+                  value={delta}
+                  prefix={delta >= 0 ? '+' : ''}
+                  className={`text-2xl font-black font-mono ${delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                  duration={1.0}
+                />
+              </motion.div>
+            ) : (
+              // 揭示前：显示 ???
+              <motion.span
+                key="delta-hidden"
+                className="text-2xl font-black font-mono text-slate-600"
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >???</motion.span>
+            )}
           </motion.div>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-slate-400 text-sm">新积分</span>
           <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
-            <AnimatedNumber
-              value={Math.round(result.rating_after)}
-              className="text-3xl font-black font-mono text-indigo-300"
-              duration={1.4}
-            />
+            {revealedNew ? (
+              // 揭示动效：scale 弹出
+              <motion.div
+                key="new-rating-revealed"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: [0.8, 1.1, 1], opacity: 1 }}
+                transition={{ duration: 0.4, times: [0, 0.6, 1] }}
+              >
+                <AnimatedNumber
+                  value={Math.round(result.rating_after)}
+                  className="text-3xl font-black font-mono text-indigo-300"
+                  duration={1.4}
+                />
+              </motion.div>
+            ) : (
+              // 揭示前：显示 ???
+              <motion.span
+                key="new-rating-hidden"
+                className="text-3xl font-black font-mono text-slate-600"
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >???</motion.span>
+            )}
           </motion.div>
         </div>
         {isCalibrating && (

@@ -161,7 +161,8 @@ const SmartInviteCard = ({
                     style={{ backgroundColor: rank.color + '22', color: rank.color, border: `1px solid ${rank.color}55` }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ backgroundColor: rank.color }} />
-                    {rank.label} · {Math.round(inviterRating)}
+                    {/* 积分盲盒：对局前只显示段位，不显示具体分数 */}
+                    {rank.emoji} {rank.label}
                   </span>
                 </div>
               )
