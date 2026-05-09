@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
@@ -139,6 +139,24 @@ const SquareLayout = ({
 
 const PlazaPane = ({ matches, loading }) => {
   const navigate = useNavigate();
+  const [onlineCount, setOnlineCount] = useState(null)
+
+  useEffect(() => {
+    async function fetchOnlineCount() {
+      try {
+        // 30 分钟内活跃的用户视为在线
+        const threshold = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        const { count } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .gte('last_seen_at', threshold)
+        setOnlineCount(count ?? 0)
+      } catch {
+        // 静默失败，保持降级文案
+      }
+    }
+    fetchOnlineCount()
+  }, [])
 
   async function handleAccept(match) {
     const { data: { session } } = await supabase.auth.getSession()
@@ -174,6 +192,9 @@ const PlazaPane = ({ matches, loading }) => {
         <span className="text-5xl">🎱</span>
         <p className="text-base font-medium text-slate-300">暂无活动对局</p>
         <p className="text-sm text-slate-500 text-center px-8">周边暂时没有人发起对局，成为第一个发起者吧！</p>
+        <p className={`text-xs font-medium ${onlineCount > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+          {onlineCount > 0 ? `🟢 附近 ${onlineCount} 人在线` : '正在连接球友网络...'}
+        </p>
         <button
           onClick={() => navigate('/create-match')}
           className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-colors"
