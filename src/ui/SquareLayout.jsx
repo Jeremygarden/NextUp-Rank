@@ -138,9 +138,9 @@ const SquareLayout = ({
 };
 
 // Task A2 + A3 + A4: 改造后的发现流空状态组件
-const EmptyPlazaState = ({ navigate }) => {
-  // Task A3: users 表无 last_seen_at 字段，显示固定连接文案
-  const onlineText = "正在连接球友网络...";
+const EmptyPlazaState = ({ navigate, onlineCount }) => {
+  // Task A3: 在线人数文案（由父组件传入真实数据）
+  const onlineText = onlineCount > 0 ? `🟢 附近 ${onlineCount} 人在线` : '正在连接球友网络...';
 
   // Task A4: 附近球友列表
   const [nearbyPlayers, setNearbyPlayers] = useState([]);
@@ -152,7 +152,7 @@ const EmptyPlazaState = ({ navigate }) => {
         const { data, error } = await supabase
           .from('users')
           .select('id, nickname, rating')
-          .order('id', { ascending: false })
+          .order('last_seen_at', { ascending: false })
           .limit(5);
         if (!error && data && data.length > 0) {
           setNearbyPlayers(data);
@@ -251,6 +251,24 @@ const EmptyPlazaState = ({ navigate }) => {
 
 const PlazaPane = ({ matches, loading }) => {
   const navigate = useNavigate();
+  const [onlineCount, setOnlineCount] = useState(null)
+
+  useEffect(() => {
+    async function fetchOnlineCount() {
+      try {
+        // 30 分钟内活跃的用户视为在线
+        const threshold = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+        const { count } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .gte('last_seen_at', threshold)
+        setOnlineCount(count ?? 0)
+      } catch {
+        // 静默失败，保持降级文案
+      }
+    }
+    fetchOnlineCount()
+  }, [])
 
   async function handleAccept(match) {
     const { data: { session } } = await supabase.auth.getSession()
@@ -280,9 +298,9 @@ const PlazaPane = ({ matches, loading }) => {
     );
   }
 
-  // Task A2/A3/A4: 无对局时展示发现流空状态
+  // Task A2/A3/A4: 无对局时展示发现流空状态（含真实在线人数）
   if (matches.length === 0) {
-    return <EmptyPlazaState navigate={navigate} />;
+    return <EmptyPlazaState navigate={navigate} onlineCount={onlineCount} />;
   }
 
   return (
