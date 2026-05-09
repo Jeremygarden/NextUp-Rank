@@ -70,7 +70,7 @@ const SquareLayout = ({
   venueName,
   players = [],
 }) => {
-  const [activeTab, setActiveTab] = useState("plaza");
+  const [activeTab, setActiveTab] = useState("leaderboard"); // Task A1: 默认显示排行榜，永远有内容，缓解广场冷清感
   const [direction, setDirection] = useState(1);
 
   const switchTab = (key) => {
@@ -137,6 +137,118 @@ const SquareLayout = ({
   );
 };
 
+// Task A2 + A3 + A4: 改造后的发现流空状态组件
+const EmptyPlazaState = ({ navigate, onlineCount }) => {
+  // Task A3: 在线人数文案（由父组件传入真实数据）
+  const onlineText = onlineCount > 0 ? `🟢 附近 ${onlineCount} 人在线` : '正在连接球友网络...';
+
+  // Task A4: 附近球友列表
+  const [nearbyPlayers, setNearbyPlayers] = useState([]);
+
+  useEffect(() => {
+    // Task A4: 拉取最近注册用户作为「附近球友」展示（按 id 倒序近似活跃度）
+    const fetchNearbyPlayers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, nickname, rating')
+          .order('last_seen_at', { ascending: false })
+          .limit(5);
+        if (!error && data && data.length > 0) {
+          setNearbyPlayers(data);
+        }
+      } catch (e) {
+        // 静默失败，不展示该区域
+      }
+    };
+    fetchNearbyPlayers();
+  }, []);
+
+  // Task A2: 脉冲圆环层数配置
+  const pulseRings = [0, 1, 2];
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-6 px-4">
+      {/* Task A2: 雷达脉冲动效 — 同心圆环 + 中心🎱 */}
+      <div className="relative flex items-center justify-center w-40 h-40">
+        {pulseRings.map((i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: `${(i + 1) * 44}px`,
+              height: `${(i + 1) * 44}px`,
+              border: i === 0 ? '1px solid rgba(99,102,241,0.35)' : '1px solid rgba(99,102,241,0.18)',
+            }}
+            animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+            transition={{ repeat: Infinity, duration: 2, delay: i * 0.6, ease: "easeInOut" }}
+          />
+        ))}
+        {/* 中心圆 */}
+        <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center z-10">
+          <span className="text-3xl">🎱</span>
+        </div>
+      </div>
+
+      {/* Task A2: 更新文案 */}
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-base font-medium text-slate-300">正在扫描附近球友...</p>
+        <p className="text-sm text-slate-500 text-center px-8">成为第一个发起对局的人</p>
+      </div>
+
+      {/* Task A3: 在线状态文案 */}
+      <p className="text-sm text-emerald-400 font-semibold">{onlineText}</p>
+
+      {/* Task A2: CTA 按钮文字改为「发起挑战」 */}
+      <button
+        onClick={() => navigate('/create-match')}
+        className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-colors"
+      >
+        发起挑战
+      </button>
+
+      {/* Task A4: 附近球友卡片列表 */}
+      {nearbyPlayers.length > 0 && (
+        <div className="w-full max-w-sm mt-2 space-y-2">
+          <p className="text-xs text-slate-500 font-semibold tracking-wider uppercase px-1">附近球友</p>
+          {nearbyPlayers.map((player) => {
+            const rankInfo = typeof player.rating === 'number' ? getRankInfo(player.rating) : null;
+            const initial = (player.nickname || '?').charAt(0).toUpperCase();
+            return (
+              <div
+                key={player.id}
+                className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex items-center gap-3"
+              >
+                {/* 头像首字母圆形 */}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                  style={{ backgroundColor: rankInfo?.color ?? '#6366f1' }}
+                >
+                  {initial}
+                </div>
+                {/* 昵称 + 段位徽章 */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-100 truncate">
+                    {player.nickname || '匿名球友'}
+                  </p>
+                  {rankInfo && (
+                    <span
+                      className="text-xs font-medium px-1.5 py-0.5 rounded"
+                      style={{ color: rankInfo.color, backgroundColor: `${rankInfo.color}20` }}
+                    >
+                      {rankInfo.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PlazaPane = ({ matches, loading }) => {
   const navigate = useNavigate();
   const [onlineCount, setOnlineCount] = useState(null)
@@ -186,23 +298,9 @@ const PlazaPane = ({ matches, loading }) => {
     );
   }
 
+  // Task A2/A3/A4: 无对局时展示发现流空状态（含真实在线人数）
   if (matches.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-        <span className="text-5xl">🎱</span>
-        <p className="text-base font-medium text-slate-300">暂无活动对局</p>
-        <p className="text-sm text-slate-500 text-center px-8">周边暂时没有人发起对局，成为第一个发起者吧！</p>
-        <p className={`text-xs font-medium ${onlineCount > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
-          {onlineCount > 0 ? `🟢 附近 ${onlineCount} 人在线` : '正在连接球友网络...'}
-        </p>
-        <button
-          onClick={() => navigate('/create-match')}
-          className="mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-2xl transition-colors"
-        >
-          发起对局
-        </button>
-      </div>
-    );
+    return <EmptyPlazaState navigate={navigate} onlineCount={onlineCount} />;
   }
 
   return (
