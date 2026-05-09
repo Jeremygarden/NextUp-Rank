@@ -70,7 +70,7 @@ const SquareLayout = ({
   venueName,
   players = [],
 }) => {
-  const [activeTab, setActiveTab] = useState("plaza");
+  const [activeTab, setActiveTab] = useState("leaderboard"); // Task A1: 默认显示排行榜，永远有内容，缓解广场冷清感
   const [direction, setDirection] = useState(1);
 
   const switchTab = (key) => {
