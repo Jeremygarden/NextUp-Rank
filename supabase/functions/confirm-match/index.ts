@@ -40,6 +40,30 @@ function mockCalculateRating(params: {
   return { new_rating, new_rd, new_vol }
 }
 
+// Fetch last match timestamps for RD decay
+async function getLastMatchDays(supabase: ReturnType<typeof createClient>, playerId: string): Promise<number> {
+  const { data } = await supabase
+    .from('rating_snapshots')
+    .select('created_at')
+    .eq('user_id', playerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!data) return 0 // First match — no decay needed
+  const lastMatchAt = new Date(data.created_at).getTime()
+  const now = Date.now()
+  return Math.max(0, (now - lastMatchAt) / (1000 * 60 * 60 * 24))
+}
+
+// Apply Glicko-2 RD decay: phi' = sqrt(phi^2 + vol^2 * t)
+function applyRdDecay(rd: number, vol: number, daysSinceLastMatch: number): number {
+  if (daysSinceLastMatch <= 0) return rd
+  const phi = rd / 173.7178
+  const phiStar = Math.sqrt(phi * phi + vol * vol * daysSinceLastMatch)
+  return Math.min(350.0, phiStar * 173.7178)
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders })
@@ -205,15 +229,23 @@ serve(async (req) => {
       return response.json() as Promise<{ new_rating: number, new_rd: number, new_vol: number }>
     }
 
+    // Apply RD decay for both players before rating calculation
+    const [daysA, daysB] = await Promise.all([
+      getLastMatchDays(supabase, playerA.id),
+      getLastMatchDays(supabase, playerB.id),
+    ])
+    const decayedRdA = applyRdDecay(playerA.rd, playerA.vol, daysA)
+    const decayedRdB = applyRdDecay(playerB.rd, playerB.vol, daysB)
+
     // Calculate player_a new rating
     const paramsA = {
       rating: playerA.rating,
-      rd: playerA.rd,
+      rd: decayedRdA,
       vol: playerA.vol,
       racks_won: resolvedRacksWon,
       racks_lost: resolvedRacksLost,
       opp_rating: playerB.rating,
-      opp_rd: playerB.rd
+      opp_rd: decayedRdB
     }
 
     let resultA: { new_rating: number, new_rd: number, new_vol: number }
@@ -241,12 +273,12 @@ serve(async (req) => {
     // Calculate player_b new rating (racks swapped)
     const paramsB = {
       rating: playerB.rating,
-      rd: playerB.rd,
+      rd: decayedRdB,
       vol: playerB.vol,
       racks_won: resolvedRacksLost,  // B wins = A losses
       racks_lost: resolvedRacksWon,  // B losses = A wins
       opp_rating: playerA.rating,
-      opp_rd: playerA.rd
+      opp_rd: decayedRdA
     }
 
     let resultB: { new_rating: number, new_rd: number, new_vol: number }
